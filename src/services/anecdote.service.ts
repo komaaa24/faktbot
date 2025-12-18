@@ -14,7 +14,7 @@ interface ProgramSoftResponse {
 }
 
 /**
- * ProgramSoft API dan anekdotlarni olish
+ * ProgramSoft API dan latifalarni olish
  */
 export async function fetchAnecdotesFromAPI(page: number = 1): Promise<AnecdoteItem[]> {
     try {
@@ -43,7 +43,7 @@ export async function fetchAnecdotesFromAPI(page: number = 1): Promise<AnecdoteI
 }
 
 /**
- * Anekdotni formatlash
+ * Latifani formatlash
  */
 export function formatAnecdote(item: AnecdoteItem): {
     externalId: string;
@@ -51,7 +51,7 @@ export function formatAnecdote(item: AnecdoteItem): {
     section: string;
 } {
     const externalId = String(item.id);
-    const content = item.text || "Anekdot topilmadi";
+    const content = item.text || "Latifa topilmadi";
     const section = item.caption || "Umumiy";
 
     return {

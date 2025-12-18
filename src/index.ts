@@ -70,11 +70,11 @@ async function fetchAndStoreRemote(page = 1) {
     return saved;
 }// command /start
 bot.command("start", async (ctx) => {
-    await ctx.reply("Assalomu alaykum! Anekdotlar olish uchun /anekdot buyrug'ini bering.");
+    await ctx.reply("Assalomu alaykum! Latifalar olish uchun /latifa buyrug'ini bering.");
 });
 
 // fetch + start session and send first anecdote
-bot.command("anekdot", async (ctx) => {
+bot.command("latifa", async (ctx) => {
     const tgId = ctx.from?.id!;
     // ensure we have at least some anecdotes in DB (fetch remote)
     const count = anecdotes.length;
@@ -95,7 +95,7 @@ bot.command("anekdot", async (ctx) => {
     sessions.set(tgId, { list, idx: 0 });
 
     if (list.length === 0) {
-        await ctx.reply("Hozircha anekdotlar topilmadi.");
+        await ctx.reply("Hozircha latifalar topilmadi.");
         return;
     }
 
@@ -108,7 +108,7 @@ bot.on("callback_query:data", async (ctx) => {
     const userId = ctx.from?.id!;
     const session = sessions.get(userId);
     if (!session) {
-        await ctx.answerCallbackQuery({ text: "Seshiyangiz topilmadi. /anekdot ni bosing." });
+        await ctx.answerCallbackQuery({ text: "Seshiyangiz topilmadi. /latifa ni bosing." });
         return;
     }
 
@@ -139,7 +139,7 @@ bot.on("callback_query:data", async (ctx) => {
                 .text("To'lov qilish (Click) 💳", `pay_${p.id}`)
                 .url("To'lov", link);
             // we can also send separate message
-            await ctx.editMessageText(`Siz ${session.list.length} anekdotni ko'rdingiz. To'liq yig'ilgan to'plam uchun bir martalik to'lov: ${amount} so'm. To'lovni Click orqali amalga oshiring:`, { reply_markup: kb });
+            await ctx.editMessageText(`Siz ${session.list.length} latifani ko'rdingiz. To'liq yig'ilgan to'plam uchun bir martalik to'lov: ${amount} so'm. To'lovni Click orqali amalga oshiring:`, { reply_markup: kb });
             await ctx.answerCallbackQuery();
         }
     } else if (data?.startsWith("pay_")) {

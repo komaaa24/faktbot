@@ -49,15 +49,15 @@ export async function handleStart(ctx: Context) {
     }
 
     const keyboard = new InlineKeyboard()
-        .text("📚 Anekdotlarni ko'rish", "show_sections");
+        .text("📚 Latifalarni ko'rish", "show_sections");
 
     await ctx.reply(
-        `🎭 <b>Anekdotlar botiga xush kelibsiz!</b>\n\n` +
-        `📖 Minglab qiziqarli anekdotlar sizni kutmoqda.\n\n` +
+        `🎭 <b>Latifalar botiga xush kelibsiz!</b>\n\n` +
+        `📖 Minglab qiziqarli latifalar sizni kutmoqda.\n\n` +
         `💡 <b>Qanday ishlaydi?</b>\n` +
-        `• Turli bo'limlardan 5 ta anekdotni bepul ko'ring\n` +
+        `• Turli bo'limlardan 5 ta latifani bepul ko'ring\n` +
         `• Davomini ko'rish uchun bir martalik to'lov qiling\n` +
-        `• Cheksiz anekdotlardan bahramand bo'ling!\n\n` +
+        `• Cheksiz latifalardan bahramand bo'ling!\n\n` +
         `Boshlash uchun quyidagi tugmani bosing 👇`,
         {
             reply_markup: keyboard,
@@ -77,16 +77,16 @@ export async function handleShowSections(ctx: Context) {
     const keyboard = new InlineKeyboard();
 
     // Faqat Tasodifiy tugma
-    keyboard.text("🎲 Tasodifiy anekdotlar", "section:random");
+    keyboard.text("🎲 Tasodifiy latifalar", "section:random");
     keyboard.row();
     keyboard.text("⬅️ Orqaga", "back_to_start");
 
     await ctx.editMessageText(
-        `🎭 <b>Anekdotlar botiga xush kelibsiz!</b>\n\n` +
-        `📚 Jami: <b>${anecdotes.length} ta</b> qiziqarli anekdot\n\n` +
-        `💡 Har safar tasodifiy anekdotlar ko'rsatiladi!\n` +
+        `🎭 <b>Latifalar botiga xush kelibsiz!</b>\n\n` +
+        `📚 Jami: <b>${anecdotes.length} ta</b> qiziqarli latifa\n\n` +
+        `💡 Har safar tasodifiy latifalar ko'rsatiladi!\n` +
         `🆓 Birinchi 5 ta - <b>BEPUL</b>\n` +
-        `💳 Qolgan anekdotlarni ko'rish uchun bir martalik <b>1111 so'm</b> to'lov qiling\n\n` +
+        `💳 Qolgan latifalarni ko'rish uchun bir martalik <b>1111 so'm</b> to'lov qiling\n\n` +
         `Boshlash uchun pastdagi tugmani bosing 👇`,
         {
             reply_markup: keyboard,
@@ -96,7 +96,7 @@ export async function handleShowSections(ctx: Context) {
 }
 
 /**
- * Bo'lim tanlanganda anekdotlarni ko'rsatish
+ * Bo'lim tanlanganda latifalarni ko'rsatish
  */
 export async function handleSectionSelect(ctx: Context, section: string) {
     const userId = ctx.from?.id;
@@ -113,7 +113,7 @@ export async function handleSectionSelect(ctx: Context, section: string) {
 
     if (filteredAnecdotes.length === 0) {
         await ctx.answerCallbackQuery({
-            text: "Bu bo'limda anekdotlar topilmadi 😔",
+            text: "Bu bo'limda latifalar topilmadi 😔",
             show_alert: true
         });
         return;
@@ -135,7 +135,7 @@ export async function handleSectionSelect(ctx: Context, section: string) {
 }
 
 /**
- * Anekdotni ko'rsatish
+ * Latifani ko'rsatish
  */
 async function showAnecdote(ctx: Context, userId: number, index: number) {
     const session = sessions.get(userId);
@@ -145,7 +145,7 @@ async function showAnecdote(ctx: Context, userId: number, index: number) {
     const anecdote = session.anecdotes[index];
     const total = session.anecdotes.length;
 
-    // Ko'rilgan anekdotlar sonini oshirish
+    // Ko'rilgan latifalar sonini oshirish
     user.viewedAnecdotes += 1;
     anecdote.views += 1;
 
@@ -167,8 +167,8 @@ async function showAnecdote(ctx: Context, userId: number, index: number) {
 
     // To'lov tugmasi faqat:
     // 1) To'lov qilmagan bo'lsa
-    // 2) Bo'limda ko'p anekdot bo'lsa (total >= 5)
-    // 3) Oxirgi anekdotni ko'rayotgan bo'lsa
+    // 2) Bo'limda ko'p latifa bo'lsa (total >= 5)
+    // 3) Oxirgi latifani ko'rayotgan bo'lsa
     const needsPayment = !user.hasPaid && total >= 5 && index === total - 1;
     if (needsPayment) {
         keyboard.text("💳 1111 so'm to'lov qiling", "payment");
@@ -178,7 +178,7 @@ async function showAnecdote(ctx: Context, userId: number, index: number) {
     keyboard.text("📂 Bo'limlarga qaytish", "show_sections");
 
     const text =
-        `📖 <b>Anekdot ${index + 1}/${total}</b>\n\n` +
+        `📖 <b>Latifa ${index + 1}/${total}</b>\n\n` +
         `${anecdote.content}\n\n` +
         `<i>👁 ${anecdote.views} marta ko'rilgan</i>`;
 
@@ -197,7 +197,7 @@ async function showAnecdote(ctx: Context, userId: number, index: number) {
 }
 
 /**
- * Keyingi/oldingi anekdot
+ * Keyingi/oldingi latifa
  */
 export async function handleNext(ctx: Context, index: number) {
     const userId = ctx.from?.id;
@@ -244,9 +244,9 @@ export async function handlePayment(ctx: Context) {
         .text("❌ Bekor qilish", "cancel_payment");
 
     await ctx.editMessageText(
-        `� <b>Qolgan anekdotlarni ko'rish uchun to'lov qiling</b>\n\n` +
-        `� Bir martalik to'lov: <b>1111 so'm</b>\n` +
-        `🎁 Cheksiz anekdotlardan bahramand bo'ling!\n\n` +
+        `💰 <b>Qolgan latifalarni ko'rish uchun to'lov qiling</b>\n\n` +
+        `💵 Bir martalik to'lov: <b>1111 so'm</b>\n` +
+        `🎁 Cheksiz latifalardan bahramand bo'ling!\n\n` +
         `🔐 Tranzaksiya: <code>${transactionParam}</code>\n\n` +
         `📱 To'lash uchun pastdagi tugmani bosing.\n` +
         `To'lovdan keyin "To'lovni tekshirish" tugmasini bosing.`,
@@ -268,7 +268,7 @@ export async function handleCheckPayment(ctx: Context, paymentId: number) {
 }
 
 /**
- * API dan anekdotlarni sinxronlash
+ * API dan latifalarni sinxronlash
  */
 export async function syncAnecdotesFromAPI() {
     try {

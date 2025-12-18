@@ -57,11 +57,11 @@ async function fetchAndStoreRemote(page = 1) {
 
 // command /start
 bot.command("start", async (ctx) => {
-    await ctx.reply("Assalomu alaykum! Anekdotlar olish uchun /anekdot buyrug'ini bering.");
+    await ctx.reply("Assalomu alaykum! Latifalar olish uchun /latifa buyrug'ini bering.");
 });
 
 // fetch + start session and send first anecdote
-bot.command("anekdot", async (ctx) => {
+bot.command("latifa", async (ctx) => {
     const tgId = ctx.from?.id!;
     // ensure we have at least some anecdotes
     const count = anecdotes.length;
@@ -82,7 +82,7 @@ bot.command("anekdot", async (ctx) => {
     sessions.set(tgId, { list, idx: 0 });
 
     if (list.length === 0) {
-        await ctx.reply("Hozircha anekdotlar topilmadi.");
+        await ctx.reply("Hozircha latifalar topilmadi.");
         return;
     }
 
@@ -98,7 +98,7 @@ bot.on("callback_query:data", async (ctx) => {
     const session = sessions.get(userId);
 
     if (!session) {
-        await ctx.answerCallbackQuery({ text: "Seshiyangiz topilmadi. /anekdot ni bosing." });
+        await ctx.answerCallbackQuery({ text: "Seshiyangiz topilmadi. /latifa ni bosing." });
         return;
     }
 
@@ -112,7 +112,7 @@ bot.on("callback_query:data", async (ctx) => {
             await ctx.answerCallbackQuery();
         } else {
             // all read -> show completion message
-            await ctx.editMessageText(`Siz ${session.list.length} anekdotni ko'rdingiz. Rahmat!`);
+            await ctx.editMessageText(`Siz ${session.list.length} latifani ko'rdingiz. Rahmat!`);
             await ctx.answerCallbackQuery();
         }
     } else {

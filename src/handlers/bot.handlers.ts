@@ -34,15 +34,15 @@ export async function handleStart(ctx: Context) {
     });
 
     const keyboard = new InlineKeyboard()
-        .text("📚 Anekdotlarni ko'rish", "show_sections");
+        .text("📚 Latifalarni ko'rish", "show_sections");
 
     await ctx.reply(
-        `🎭 <b>Anekdotlar botiga xush kelibsiz!</b>\n\n` +
-        `📖 Minglab qiziqarli anekdotlar sizni kutmoqda.\n\n` +
+        `🎭 <b>Latifalar botiga xush kelibsiz!</b>\n\n` +
+        `📖 Minglab qiziqarli latifalar sizni kutmoqda.\n\n` +
         `💡 <b>Qanday ishlaydi?</b>\n` +
-        `• Turli bo'limlardan 5 ta anekdotni bepul ko'ring\n` +
+        `• Turli bo'limlardan 5 ta latifani bepul ko'ring\n` +
         `• Davomini ko'rish uchun bir martalik to'lov qiling\n` +
-        `• Cheksiz anekdotlardan bahramand bo'ling!\n\n` +
+        `• Cheksiz latifalardan bahramand bo'ling!\n\n` +
         `Boshlash uchun quyidagi tugmani bosing 👇`,
         {
             reply_markup: keyboard,
@@ -84,7 +84,7 @@ export async function handleShowSections(ctx: Context) {
 
     await ctx.editMessageText(
         `📂 <b>Bo'limni tanlang:</b>\n\n` +
-        `Qiziqarli anekdotlar sizni kutmoqda!`,
+        `Qiziqarli latifalar sizni kutmoqda!`,
         {
             reply_markup: keyboard,
             parse_mode: "HTML"
@@ -93,7 +93,7 @@ export async function handleShowSections(ctx: Context) {
 }
 
 /**
- * Bo'lim tanlanganda anekdotlarni ko'rsatish
+ * Bo'lim tanlanganda latifalarni ko'rsatish
  */
 export async function handleSectionSelect(ctx: Context, section: string) {
     const userId = ctx.from?.id;
@@ -116,7 +116,7 @@ export async function handleSectionSelect(ctx: Context, section: string) {
 
     if (anecdotes.length === 0) {
         await ctx.answerCallbackQuery({
-            text: "Bu bo'limda anekdotlar topilmadi 😔",
+            text: "Bu bo'limda latifalar topilmadi 😔",
             show_alert: true
         });
         return;
@@ -133,7 +133,7 @@ export async function handleSectionSelect(ctx: Context, section: string) {
 }
 
 /**
- * Anekdotni ko'rsatish
+ * Latifani ko'rsatish
  */
 async function showAnecdote(ctx: Context, userId: number, index: number) {
     const session = sessions.get(userId);
@@ -143,7 +143,7 @@ async function showAnecdote(ctx: Context, userId: number, index: number) {
     const total = session.anecdotes.length;
     const hasPaid = await userService.hasPaid(userId);
 
-    // Ko'rilgan anekdotlar sonini oshirish
+    // Ko'rilgan latifalar sonini oshirish
     await userService.incrementViewedAnecdotes(userId);
 
     // Increment views
@@ -163,7 +163,7 @@ async function showAnecdote(ctx: Context, userId: number, index: number) {
 
     keyboard.row();
 
-    // Agar to'lov qilmagan bo'lsa va oxirgi anekdot ko'rsatilayotgan bo'lsa
+    // Agar to'lov qilmagan bo'lsa va oxirgi latifa ko'rsatilayotgan bo'lsa
     if (!hasPaid && index === total - 1) {
         keyboard.text("💳 To'lov qilish", "payment");
         keyboard.row();
@@ -172,7 +172,7 @@ async function showAnecdote(ctx: Context, userId: number, index: number) {
     keyboard.text("📂 Bo'limlarga qaytish", "show_sections");
 
     const text =
-        `📖 <b>Anekdot ${index + 1}/${total}</b>\n\n` +
+        `📖 <b>Latifa ${index + 1}/${total}</b>\n\n` +
         `${anecdote.content}\n\n` +
         `<i>👁 ${anecdote.views} marta ko'rilgan</i>`;
 
@@ -191,7 +191,7 @@ async function showAnecdote(ctx: Context, userId: number, index: number) {
 }
 
 /**
- * Keyingi/oldingi anekdot
+ * Keyingi/oldingi latifa
  */
 export async function handleNext(ctx: Context, index: number) {
     const userId = ctx.from?.id;
@@ -291,7 +291,7 @@ export async function handleCheckPayment(ctx: Context, paymentId: number) {
 
         await ctx.editMessageText(
             `✅ <b>To'lov muvaffaqiyatli!</b>\n\n` +
-            `Endi siz cheksiz anekdotlardan bahramand bo'lishingiz mumkin! 🎉\n\n` +
+            `Endi siz cheksiz latifalardan bahramand bo'lishingiz mumkin! 🎉\n\n` +
             `Davom etish uchun /start bosing.`,
             { parse_mode: "HTML" }
         );
@@ -309,7 +309,7 @@ export async function handleCheckPayment(ctx: Context, paymentId: number) {
 }
 
 /**
- * API dan anekdotlarni sinxronlash
+ * API dan latifalarni sinxronlash
  */
 async function syncAnecdotesFromAPI() {
     const anecdoteRepo = AppDataSource.getRepository(Anecdote);

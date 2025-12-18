@@ -59,7 +59,7 @@ bot.command("sync", async (ctx) => {
         return ctx.reply("⛔️ Bu buyruqdan foydalanish uchun ruxsatingiz yo'q.");
     }
 
-    await ctx.reply("🔄 Anekdotlar sinxronlashtirilmoqda...");
+    await ctx.reply("🔄 Latifalar sinxronlashtirilmoqda...");
     await syncAnecdotesFromAPI();
     await ctx.reply("✅ Sinxronlash muvaffaqiyatli tugadi!");
 });
