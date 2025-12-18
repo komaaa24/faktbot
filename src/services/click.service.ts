@@ -27,6 +27,7 @@ export function generateClickPaymentLink(params: ClickPaymentParams): ClickPayme
         merchantUserId
     } = params;
 
+    // merchant_user_id ni qo'shmasak, Click -2046 xatoligini bermaydi
     const urlParams = new URLSearchParams({
         service_id: serviceId,
         merchant_id: merchantId,
@@ -35,9 +36,8 @@ export function generateClickPaymentLink(params: ClickPaymentParams): ClickPayme
         return_url: returnUrl,
     });
 
-    if (merchantUserId) {
-        urlParams.append("merchant_user_id", merchantUserId);
-    }
+    // IMPORTANT: merchantUserId ni intentionally qo'shmaymiz
+    // Chunki Click kabinetda bu user ro'yxatdan o'tmagan bo'lishi mumkin
 
     const url = `https://my.click.uz/services/pay?${urlParams.toString()}`;
 
