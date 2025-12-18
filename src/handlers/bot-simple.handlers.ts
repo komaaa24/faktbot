@@ -53,11 +53,11 @@ export async function handleStart(ctx: Context) {
 
     await ctx.reply(
         `🎭 <b>Latifalar botiga xush kelibsiz!</b>\n\n` +
-        `📖 Minglab qiziqarli latifalar sizni kutmoqda.\n\n` +
+        `📖 Yuzlab qiziqarli latifalar sizni kutmoqda.\n\n` +
         `💡 <b>Qanday ishlaydi?</b>\n` +
         `• Turli bo'limlardan 5 ta latifani bepul ko'ring\n` +
         `• Davomini ko'rish uchun bir martalik to'lov qiling\n` +
-        `• Cheksiz latifalardan bahramand bo'ling!\n\n` +
+        `• Yuzlab latifalardan bahramand bo'ling!\n\n` +
         `Boshlash uchun quyidagi tugmani bosing 👇`,
         {
             reply_markup: keyboard,
@@ -250,7 +250,7 @@ export async function handlePayment(ctx: Context) {
     await ctx.editMessageText(
         `💰 <b>Qolgan latifalarni ko'rish uchun to'lov qiling</b>\n\n` +
         `💵 Bir martalik to'lov: <b>1111 so'm</b>\n` +
-        `🎁 Cheksiz latifalardan bahramand bo'ling!\n\n` +
+        `🎁 Yuzlab latifalardan bahramand bo'ling!\n\n` +
         `🔐 Tranzaksiya: <code>${transactionParam}</code>\n\n` +
         `📱 To'lash uchun pastdagi tugmani bosing.\n` +
         `To'lovdan keyin "To'lovni tekshirish" tugmasini bosing.`,

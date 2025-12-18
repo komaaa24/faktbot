@@ -396,7 +396,7 @@ export async function handleClickComplete(req: Request, res: Response, bot: Bot)
                 telegramId,
                 `✅ <b>To'lovingiz muvaffaqiyatli amalga oshirildi!</b>\n\n` +
                 `💰 Summa: ${amount} so'm\n` +
-                `🎉 Endi siz cheksiz latifalardan bahramand bo'lishingiz mumkin!\n\n` +
+                `🎉 Endi siz yuzlab latifalardan bahramand bo'lishingiz mumkin!\n\n` +
                 `Davom etish uchun /start buyrug'ini bering.`,
                 { parse_mode: "HTML" }
             );

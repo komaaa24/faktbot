@@ -38,11 +38,11 @@ export async function handleStart(ctx: Context) {
 
     await ctx.reply(
         `🎭 <b>Latifalar botiga xush kelibsiz!</b>\n\n` +
-        `📖 Minglab qiziqarli latifalar sizni kutmoqda.\n\n` +
+        `📖 Yuzlab qiziqarli latifalar sizni kutmoqda.\n\n` +
         `💡 <b>Qanday ishlaydi?</b>\n` +
         `• Turli bo'limlardan 5 ta latifani bepul ko'ring\n` +
         `• Davomini ko'rish uchun bir martalik to'lov qiling\n` +
-        `• Cheksiz latifalardan bahramand bo'ling!\n\n` +
+        `• Yuzlab latifalardan bahramand bo'ling!\n\n` +
         `Boshlash uchun quyidagi tugmani bosing 👇`,
         {
             reply_markup: keyboard,
@@ -292,7 +292,7 @@ export async function handleCheckPayment(ctx: Context, paymentId: number) {
 
         await ctx.editMessageText(
             `✅ <b>To'lov muvaffaqiyatli!</b>\n\n` +
-            `Endi siz cheksiz latifalardan bahramand bo'lishingiz mumkin! 🎉\n\n` +
+            `Endi siz yuzlab latifalardan bahramand bo'lishingiz mumkin! 🎉\n\n` +
             `Davom etish uchun /start bosing.`,
             { parse_mode: "HTML" }
         );
