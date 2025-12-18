@@ -123,7 +123,7 @@ bot.on("callback_query:data", async (ctx) => {
         } else {
             // all read -> offer payment
             const amount = Number(process.env.CLICK_DEFAULT_AMOUNT || 1000);
-            const { link, tx } = generateClickLink(amount, { additional_param4: "basic" });
+            const { link, tx } = generateClickLink(amount);
 
             // save pending payment
             const p: Payment = {
@@ -150,7 +150,7 @@ bot.on("callback_query:data", async (ctx) => {
             await ctx.answerCallbackQuery({ text: "To'lov topilmadi." });
             return;
         }
-        const { link } = generateClickLink(payment.amount, {});
+        const { link } = generateClickLink(payment.amount);
         await ctx.answerCallbackQuery();
         await ctx.reply(`To'lov uchun link: ${link}`);
     } else {
