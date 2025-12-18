@@ -242,7 +242,7 @@ export async function handlePayment(ctx: Context) {
         amount,
         transactionParam,
         returnUrl: process.env.CLICK_RETURN_URL || `https://t.me/${ctx.me.username}`,
-        merchantUserId: userId.toString()
+        merchantUserId: process.env.CLICK_MERCHANT_USER_ID
     });
 
     const keyboard = new InlineKeyboard()

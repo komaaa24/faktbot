@@ -11,16 +11,16 @@ export function generateClickLink(amount: number, extraParams?: Record<string, s
 
   const serviceId = process.env.CLICK_SERVICE_ID || "";
   const merchantId = process.env.CLICK_MERCHANT_ID || "";
+  const merchantUserId = process.env.CLICK_MERCHANT_USER_ID || "";
   const returnUrl = process.env.CLICK_RETURN_URL || "";
 
   // Click to'lov linki
   const params = new URLSearchParams({
     service_id: serviceId,
     merchant_id: merchantId,
+    merchant_user_id: merchantUserId,
     amount: String(amount),
     transaction_param: tx,
-    additional_param3: additional_param3,
-    additional_param4: additional_param4,
     return_url: returnUrl
   });
 
