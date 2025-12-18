@@ -123,11 +123,15 @@ app.get("/health", (req, res) => {
 
 // Click webhook endpoint - ASOSIY
 app.post("/webhook/click", async (req, res) => {
-    const { action } = req.body;
+    let { action } = req.body;
+
+    // Action string bo'lishi mumkin, number ga o'tkazamiz
+    action = parseInt(action);
 
     console.log("\n" + "🌐".repeat(40));
     console.log("📥 INCOMING CLICK WEBHOOK REQUEST - /webhook/click");
-    console.log("  Action:", action, action === 0 ? "(PREPARE)" : action === 1 ? "(COMPLETE)" : "(UNKNOWN)");
+    console.log("  Action:", action, "(type:", typeof action, ")");
+    console.log("  Action type:", action === 0 ? "PREPARE" : action === 1 ? "COMPLETE" : "UNKNOWN");
     console.log("  Time:", new Date().toISOString());
     console.log("🌐".repeat(40) + "\n");
 
@@ -141,7 +145,7 @@ app.post("/webhook/click", async (req, res) => {
         } else {
             console.error("\n" + "❌".repeat(40));
             console.error("ERROR: Unknown action received!");
-            console.error("  Action:", action);
+            console.error("  Action:", action, "(type:", typeof action, ")");
             console.error("  Expected: 0 (PREPARE) or 1 (COMPLETE)");
             console.error("  Full request body:");
             console.error(JSON.stringify(req.body, null, 2));
@@ -166,16 +170,19 @@ app.post("/webhook/click", async (req, res) => {
             error_note: "Internal server error"
         });
     }
-});
-
-// Click webhook endpoint - QO'SHIMCHA (agar kabinetda /api/click yozilgan bo'lsa)
+});// Click webhook endpoint - QO'SHIMCHA (agar kabinetda /api/click yozilgan bo'lsa)
 app.post("/api/click", async (req, res) => {
     console.log("\n" + "⚠️ ".repeat(40));
     console.log("📥 CLICK WEBHOOK REQUEST RECEIVED ON /api/click");
     console.log("   Redirecting to main webhook handler...");
     console.log("⚠️ ".repeat(40) + "\n");
 
-    const { action } = req.body;
+    let { action } = req.body;
+
+    // Action string bo'lishi mumkin, number ga o'tkazamiz
+    action = parseInt(action);
+
+    console.log("   Action (parsed):", action, typeof action);
 
     try {
         if (action === 0) {
@@ -183,7 +190,8 @@ app.post("/api/click", async (req, res) => {
         } else if (action === 1) {
             await handleClickComplete(req, res, bot);
         } else {
-            console.error("ERROR: Unknown action:", action);
+            console.error("ERROR: Unknown action:", action, typeof action);
+            console.error("Request body:", JSON.stringify(req.body, null, 2));
             res.status(400).json({
                 error: -3,
                 error_note: "Unknown action"
@@ -191,14 +199,13 @@ app.post("/api/click", async (req, res) => {
         }
     } catch (error) {
         console.error("CRITICAL ERROR:", error);
+        console.error("Stack:", error instanceof Error ? error.stack : String(error));
         res.status(500).json({
             error: -8,
             error_note: "Internal server error"
         });
     }
-});
-
-/**
+});/**
  * Initialize application
  */
 async function main() {
