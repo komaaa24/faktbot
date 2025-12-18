@@ -57,13 +57,10 @@ export async function handleStart(ctx: Context) {
 export async function handleShowSections(ctx: Context) {
     const anecdoteRepo = AppDataSource.getRepository(Anecdote);
 
-    // Bo'limlarni olish
-    const sections = await anecdoteRepo
-        .createQueryBuilder("anecdote")
-        .select("DISTINCT anecdote.section", "section")
-        .getRawMany();
+    // MongoDB da count tekshirish
+    const totalCount = await anecdoteRepo.count();
 
-    if (sections.length === 0) {
+    if (totalCount === 0) {
         // Agar DB bo'sh bo'lsa, API dan yuklaymiz
         await syncAnecdotesFromAPI();
         return handleShowSections(ctx);
@@ -75,8 +72,6 @@ export async function handleShowSections(ctx: Context) {
     keyboard.text("🎲 Tasodifiy latifalar", "section:random");
     keyboard.row();
     keyboard.text("⬅️ Orqaga", "back_to_start");
-
-    const totalCount = await anecdoteRepo.count();
 
     await ctx.editMessageText(
         `🎭 <b>Latifalar botiga xush kelibsiz!</b>\n\n` +
@@ -102,17 +97,24 @@ export async function handleSectionSelect(ctx: Context, section: string) {
     const anecdoteRepo = AppDataSource.getRepository(Anecdote);
     const hasPaid = await userService.hasPaid(userId);
 
-    let query = anecdoteRepo.createQueryBuilder("anecdote");
+    const limit = hasPaid ? 20 : 5;
 
-    if (section !== "random") {
-        query = query.where("anecdote.section = :section", { section });
+    // MongoDB uchun oddiy find() va shuffle
+    let allAnecdotes: Anecdote[];
+
+    if (section === "random") {
+        // Barcha latifalardan
+        allAnecdotes = await anecdoteRepo.find();
+    } else {
+        // Bo'lim bo'yicha
+        allAnecdotes = await anecdoteRepo.find({
+            where: { section: section }
+        });
     }
 
-    // Tasodifiy 5 ta olish
-    const anecdotes = await query
-        .orderBy("RANDOM()")
-        .limit(hasPaid ? 20 : 5)
-        .getMany();
+    // JavaScript da shuffle qilish
+    const shuffled = allAnecdotes.sort(() => Math.random() - 0.5);
+    const anecdotes = shuffled.slice(0, limit);
 
     if (anecdotes.length === 0) {
         await ctx.answerCallbackQuery({
