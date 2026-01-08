@@ -8,11 +8,11 @@ import { Bot } from "grammy";
 import { AppDataSource } from "./database/data-source.js";
 import {
     handleStart,
-    handleShowPoems,
+    handleShowJokes,
     handleNext,
     handlePayment,
     handleCheckPayment,
-    syncPoemsFromAPI
+    syncJokesFromAPI
 } from "./handlers/bot.handlers.js";
 import { handlePaymentWebhook } from "./handlers/webhook.handlers.js";
 
@@ -56,7 +56,7 @@ async function wireBot(bot: Bot) {
         }
 
         await ctx.reply("🔄 Sinxronlashtirilmoqda...");
-        await syncPoemsFromAPI();
+        await syncJokesFromAPI();
         await ctx.reply("✅ Sinxronlash muvaffaqiyatli tugadi!");
     });
 
@@ -64,8 +64,8 @@ async function wireBot(bot: Bot) {
         const data = ctx.callbackQuery.data;
 
         try {
-            if (data === "show_poems") {
-                await handleShowPoems(ctx);
+            if (data === "show_jokes") {
+                await handleShowJokes(ctx);
             } else if (data === "back_to_start") {
                 await handleStart(ctx);
             } else if (data.startsWith("next:")) {
@@ -151,7 +151,7 @@ async function main() {
     const autoSync = (process.env.AUTO_SYNC_ON_STARTUP || "true").toLowerCase() !== "false";
     if (autoSync) {
         console.log("🔄 Background sync started...");
-        void syncPoemsFromAPI();
+        void syncJokesFromAPI();
     }
 }
 

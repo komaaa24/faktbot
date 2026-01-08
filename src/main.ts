@@ -9,11 +9,11 @@ import { AppDataSource } from "./database/data-source.js";
 import { SherlarDataSource } from "./database/sherlar-data-source.js";
 import {
     handleStart,
-    handleShowPoems,
+    handleShowJokes,
     handleNext,
     handlePayment,
     handleCheckPayment,
-    syncPoemsFromAPI,
+    syncJokesFromAPI,
     handleUploadBackground
 } from "./handlers/bot.handlers.js";
 import {
@@ -120,8 +120,8 @@ bot.command("sync", async (ctx) => {
         return ctx.reply("⛔️ Bu buyruqdan foydalanish uchun ruxsatingiz yo'q.");
     }
 
-    await ctx.reply("🔄 She'rlar sinxronlashtirilmoqda...");
-    await syncPoemsFromAPI();
+    await ctx.reply("🔄 Latifalar sinxronlashtirilmoqda...");
+    await syncJokesFromAPI();
     await ctx.reply("✅ Sinxronlash muvaffaqiyatli tugadi!");
 });
 
@@ -136,8 +136,8 @@ bot.on("callback_query:data", async (ctx) => {
         if (data.startsWith("admin:")) {
             const action = data.replace("admin:", "");
             await handleAdminCallback(ctx, action);
-        } else if (data === "show_poems") {
-            await handleShowPoems(ctx);
+        } else if (data === "show_jokes") {
+            await handleShowJokes(ctx);
         } else if (data === "back_to_start") {
             await handleStart(ctx);
         } else if (data.startsWith("next:")) {
@@ -207,7 +207,7 @@ app.post("/internal/send-payment-notification", async (req, res) => {
             `✅ <b>To'lovingiz tasdiqlandi!</b>\n\n` +
             `💰 Summa: ${amount || 1111} so'm\n` +
             `🎉 Endi botdan cheksiz foydalanishingiz mumkin!\n\n` +
-            `She'rlarni o'qishni boshlash uchun quyidagi tugmani bosing 👇`,
+            `Latifalarni o'qishni boshlash uchun quyidagi tugmani bosing 👇`,
             {
                 parse_mode: "HTML",
                 reply_markup: keyboard
@@ -240,10 +240,10 @@ app.post("/webhook/pay", async (req, res) => {
  */
 async function main() {
     try {
-        console.log("🚀 Starting Anecdote Bot...");
+        console.log("🚀 Starting Latifalar Bot...");
 
-        // Initialize main database (sevgi)
-        console.log("📦 Connecting to main database (sevgi)...");
+        // Initialize main database (latifalar)
+        console.log("📦 Connecting to main database (latifalar)...");
         await AppDataSource.initialize();
         console.log("✅ Main database connected");
 
@@ -257,10 +257,10 @@ async function main() {
             console.warn("⚠️ Sherlar database connection failed (will use local payments only):", errorMsg);
         }
 
-        // Sync poems on startup
-        console.log("🔄 Syncing poems from API...");
-        await syncPoemsFromAPI();
-        console.log("✅ Poems synced");
+        // Sync jokes on startup
+        console.log("🔄 Syncing jokes from API...");
+        await syncJokesFromAPI();
+        console.log("✅ Jokes synced");
 
         // Start Express server
         app.listen(PORT, () => {

@@ -92,7 +92,7 @@ async function main() {
             // Return URL - to'lovdan keyin botga qaytish
             const returnUrl = botKey
                 ? `https://t.me/${botKey.replace('_bot', '')}_bot`
-                : `https://t.me/sevgiSozlari_bot`;
+                : `https://t.me/latifalar_bot`;
 
             const paymentLink = generatePaymentLink({
                 amount,

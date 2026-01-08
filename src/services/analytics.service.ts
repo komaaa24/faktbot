@@ -1,7 +1,7 @@
 import { AppDataSource } from "../database/data-source.js";
 import { User } from "../entities/User.js";
 import { Payment, PaymentStatus } from "../entities/Payment.js";
-import { Poem } from "../entities/Poem.js";
+import { Joke } from "../entities/Joke.js";
 
 /**
  * Analytics Service - Super Admin uchun statistika
@@ -79,46 +79,46 @@ export class AnalyticsService {
     }
 
     /**
-     * She'rlar statistikasi
+     * Latifalar statistikasi
      */
-    async getPoemStats() {
-        const poemRepo = AppDataSource.getRepository(Poem);
+    async getJokeStats() {
+        const jokeRepo = AppDataSource.getRepository(Joke);
 
-        const totalPoems = await poemRepo.count();
+        const totalJokes = await jokeRepo.count();
 
         // Umumiy ko'rishlar
-        const poems = await poemRepo.find();
-        const totalViews = poems.reduce((sum, p) => sum + p.views, 0);
-        const totalLikes = poems.reduce((sum, p) => sum + p.likes, 0);
-        const totalDislikes = poems.reduce((sum, p) => sum + p.dislikes, 0);
+        const jokes = await jokeRepo.find();
+        const totalViews = jokes.reduce((sum, j) => sum + j.views, 0);
+        const totalLikes = jokes.reduce((sum, j) => sum + j.likes, 0);
+        const totalDislikes = jokes.reduce((sum, j) => sum + j.dislikes, 0);
 
-        // Eng mashhur she'r
-        const mostViewed = await poemRepo.findOne({
+        // Eng mashhur latifa
+        const mostViewed = await jokeRepo.findOne({
             where: {},
             order: { views: "DESC" }
         });
 
-        // Eng yoqtirilgan she'r
-        const mostLiked = await poemRepo.findOne({
+        // Eng yoqtirilgan latifa
+        const mostLiked = await jokeRepo.findOne({
             where: {},
             order: { likes: "DESC" }
         });
 
         return {
-            totalPoems,
+            totalJokes,
             totalViews,
             totalLikes,
             totalDislikes,
-            avgViewsPerPoem: totalPoems > 0 ? (totalViews / totalPoems).toFixed(1) : "0",
-            mostViewedPoem: mostViewed ? {
-                content: mostViewed.content.substring(0, 50) + "...",
+            avgViewsPerJoke: totalJokes > 0 ? (totalViews / totalJokes).toFixed(1) : "0",
+            mostViewedJoke: mostViewed ? {
+                content: mostViewed.content.substring(0, 100) + "...",
                 views: mostViewed.views,
-                author: mostViewed.author
+                category: mostViewed.category
             } : null,
-            mostLikedPoem: mostLiked ? {
-                content: mostLiked.content.substring(0, 50) + "...",
+            mostLikedJoke: mostLiked ? {
+                content: mostLiked.content.substring(0, 100) + "...",
                 likes: mostLiked.likes,
-                author: mostLiked.author
+                category: mostLiked.category
             } : null
         };
     }
@@ -133,10 +133,10 @@ export class AnalyticsService {
         // Qadam 1: /start bosganlar
         const totalUsers = await userRepo.count();
 
-        // Qadam 2: She'rlarni ko'rganlar (viewedAnecdotes > 0)
+        // Qadam 2: Latifalarni ko'rganlar (viewedJokes > 0)
         const usersWhoViewed = await userRepo
             .createQueryBuilder("user")
-            .where("user.viewedAnecdotes > 0")
+            .where("user.viewedJokes > 0")
             .getCount();
 
         // Qadam 3: To'lov oynasini ochganlar
@@ -209,7 +209,7 @@ export class AnalyticsService {
         const userRepo = AppDataSource.getRepository(User);
 
         const topUsers = await userRepo.find({
-            order: { viewedAnecdotes: "DESC" },
+            order: { viewedJokes: "DESC" },
             take: 5
         });
 
@@ -217,7 +217,7 @@ export class AnalyticsService {
             telegramId: user.telegramId,
             username: user.username || "No username",
             firstName: user.firstName || "",
-            viewedPoems: user.viewedAnecdotes,
+            viewedJokes: user.viewedJokes,
             hasPaid: user.hasPaid
         }));
     }

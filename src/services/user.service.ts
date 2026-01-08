@@ -71,11 +71,11 @@ export class UserService {
     }
 
     /**
-     * Ko'rilgan anekdotlar sonini oshirish
+     * Ko'rilgan latifalar sonini oshirish
      */
-    async incrementViewedAnecdotes(telegramId: number): Promise<void> {
+    async incrementViewedJokes(telegramId: number): Promise<void> {
         const user = await this.findOrCreate(telegramId);
-        user.viewedAnecdotes += 1;
+        user.viewedJokes += 1;
         await this.userRepo.save(user);
     }
 }

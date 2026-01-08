@@ -1,17 +1,17 @@
-# 🎭 Anecdote Telegram Bot
+# 😂 Latifalar Telegram Bot
 
-Professional Telegram bot with Click payment integration for sharing anecdotes.
+Professional Telegram bot with Click payment integration for sharing jokes.
 
 ## ✨ Features
 
-- 📚 Multiple anecdote categories/sections
-- 🎲 Random anecdote selection
-- 💳 Click.uz payment integration
-- 👤 User management system
-- 📊 View tracking
-- 🔄 Auto-sync with external API
-- 🎯 Free trial (5 anecdotes)
-- ✅ One-time payment for unlimited access
+- � Minglab kulgu baxsh etuvchi latifalar
+- 🎲 Tasodifiy latifa tanlash
+- 💳 Click.uz to'lov integratsiyasi
+- 👤 Foydalanuvchilar boshqaruvi
+- 📊 Ko'rishlar statistikasi
+- 🔄 API dan avtomatik sinxronlash
+- 🎯 5 ta bepul latifa
+- ✅ Bir martalik to'lov - cheksiz kirish
 
 ## 🛠 Tech Stack
 
@@ -34,7 +34,7 @@ Professional Telegram bot with Click payment integration for sharing anecdotes.
 1. **Clone repository:**
    ```bash
    git clone <your-repo-url>
-   cd anikdod
+   cd latifalar
    ```
 
 2. **Install dependencies:**
@@ -55,12 +55,12 @@ Professional Telegram bot with Click payment integration for sharing anecdotes.
    DB_PORT=5432
    DB_USER=postgres
    DB_PASS=your_password
-   DB_NAME=anecdotes_db
+   DB_NAME=latifalar
    
    CLICK_SERVICE_ID=87085
    CLICK_MERCHANT_ID=7269
    CLICK_SECRET_KEY=your_click_secret_key
-   CLICK_DEFAULT_AMOUNT=5000
+   CLICK_DEFAULT_AMOUNT=1111
    CLICK_RETURN_URL=https://t.me/your_bot_username
    
    PORT=3000
@@ -69,7 +69,7 @@ Professional Telegram bot with Click payment integration for sharing anecdotes.
 
 5. **Create database:**
    ```bash
-   createdb anecdotes_db
+   createdb latifalar
    ```
 
 ## 🎮 Usage
@@ -85,7 +85,7 @@ npm run build
 npm run start:prod
 ```
 
-### Sync anecdotes manually:
+### Sync jokes manually:
 Use `/sync` command in bot (admin only)
 
 ## 🔧 Project Structure
@@ -96,7 +96,7 @@ src/
 │   └── data-source.ts       # TypeORM configuration
 ├── entities/
 │   ├── User.ts              # User entity
-│   ├── Anecdote.ts          # Anecdote entity
+│   ├── Joke.ts              # Joke entity
 │   └── Payment.ts           # Payment entity
 ├── services/
 │   ├── user.service.ts      # User business logic

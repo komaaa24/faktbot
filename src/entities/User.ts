@@ -22,7 +22,7 @@ export class User {
     hasPaid!: boolean;
 
     @Column({ type: "int", default: 0 })
-    viewedAnecdotes!: number;
+    viewedJokes!: number;
 
     // Admin tomonidan revoke qilingan vaqt (agar revoke qilingan bo'lsa)
     @Column({ type: "timestamp", nullable: true })

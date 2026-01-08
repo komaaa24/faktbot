@@ -1,8 +1,8 @@
 {
-    "name": "anecdote-bot",
+    "name": "latifalar-bot",
     "version": "2.0.0",
     "type": "module",
-    "description": "Professional Telegram anecdote bot with Click payment integration",
+    "description": "Professional Telegram latifalar bot with Click payment integration",
     "scripts": {
         "dev": "tsx watch src/main.ts",
         "start": "tsx src/bot-simple.ts",

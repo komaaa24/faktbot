@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { Poem } from "../entities/Poem.js";
+import { Joke } from "../entities/Joke.js";
 import { Payment } from "../entities/Payment.js";
 import { User } from "../entities/User.js";
 
@@ -10,10 +10,10 @@ export const AppDataSource = new DataSource({
     port: Number(process.env.DB_PORT) || 5432,
     username: process.env.DB_USER || "postgres",
     password: process.env.DB_PASS || "postgres",
-    database: process.env.DB_NAME || "sevgi",
+    database: process.env.DB_NAME || "latifalar",
     synchronize: false, // Production'da false bo'lishi kerak
     logging: process.env.NODE_ENV === "development",
-    entities: [Poem, Payment, User],
+    entities: [Joke, Payment, User],
     subscribers: [],
     migrations: ["dist/migrations/*.js"],
     migrationsTableName: "migrations"

@@ -1,8 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from "typeorm";
 
-@Entity("poems")
-@Index(["author"])
-export class Poem {
+@Entity("jokes")
+@Index(["category"])
+export class Joke {
     @PrimaryGeneratedColumn()
     id!: number;
 
@@ -10,7 +10,7 @@ export class Poem {
     externalId!: string;
 
     @Column({ type: "varchar", nullable: true })
-    author?: string;
+    category?: string;
 
     @Column({ type: "varchar", nullable: true })
     title?: string;

@@ -96,7 +96,7 @@ export async function handleAdminPanel(ctx: Context) {
         .text("🔄 Yangilash", "admin:refresh");
 
     const message =
-        `🎯 <b>SUPER ADMIN PANEL</b>\n\n` +
+        `🎯 <b>LATIFALAR BOT - ADMIN PANEL</b>\n\n` +
         `👋 Xush kelibsiz, admin!\n\n` +
         `📊 Botning to'liq statistikasi va analytics bu yerda.\n` +
         `Kerakli bo'limni tanlang:\n\n` +
@@ -187,7 +187,7 @@ export async function handleAdminPayments(ctx: Context) {
 }
 
 /**
- * She'rlar statistikasi
+ * She'rlar statistikasi -> Latifalar statistikasi
  */
 export async function handleAdminPoems(ctx: Context) {
     const userId = ctx.from?.id;
@@ -195,31 +195,35 @@ export async function handleAdminPoems(ctx: Context) {
 
     await ctx.answerCallbackQuery({ text: "⏳ Yuklanmoqda..." });
 
-    const stats = await analyticsService.getPoemStats();
+    const stats = await analyticsService.getJokeStats();
 
     let message =
-        `📚 <b>SHE'RLAR STATISTIKASI</b>\n\n` +
+        `� <b>LATIFALAR STATISTIKASI</b>\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `📖 <b>Jami she'rlar:</b> ${stats.totalPoems}\n` +
+        `📖 <b>Jami latifalar:</b> ${stats.totalJokes}\n` +
         `👁 <b>Jami ko'rishlar:</b> ${stats.totalViews.toLocaleString()}\n` +
-        `❤️ <b>Jami like:</b> ${stats.totalLikes}\n` +
-        `💔 <b>Jami dislike:</b> ${stats.totalDislikes}\n\n` +
-        `📊 <b>O'rtacha ko'rish:</b> ${stats.avgViewsPerPoem} ta/she'r\n\n`;
+        `😄 <b>Jami like:</b> ${stats.totalLikes}\n` +
+        `� <b>Jami dislike:</b> ${stats.totalDislikes}\n\n` +
+        `📊 <b>O'rtacha ko'rish:</b> ${stats.avgViewsPerJoke} ta/latifa\n\n`;
 
-    if (stats.mostViewedPoem) {
+    if (stats.mostViewedJoke) {
         message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-        message += `🔥 <b>Eng mashhur she'r:</b>\n`;
-        message += `👤 ${stats.mostViewedPoem.author}\n`;
-        message += `👁 ${stats.mostViewedPoem.views} ko'rish\n`;
-        message += `<i>"${stats.mostViewedPoem.content}"</i>\n\n`;
+        message += `🔥 <b>Eng mashhur latifa:</b>\n`;
+        if (stats.mostViewedJoke.category) {
+            message += `� ${stats.mostViewedJoke.category}\n`;
+        }
+        message += `👁 ${stats.mostViewedJoke.views} ko'rish\n`;
+        message += `<i>"${stats.mostViewedJoke.content}"</i>\n\n`;
     }
 
-    if (stats.mostLikedPoem) {
+    if (stats.mostLikedJoke) {
         message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-        message += `❤️ <b>Eng yoqtirilgan she'r:</b>\n`;
-        message += `👤 ${stats.mostLikedPoem.author}\n`;
-        message += `❤️ ${stats.mostLikedPoem.likes} like\n`;
-        message += `<i>"${stats.mostLikedPoem.content}"</i>\n\n`;
+        message += `😄 <b>Eng yoqtirilgan latifa:</b>\n`;
+        if (stats.mostLikedJoke.category) {
+            message += `� ${stats.mostLikedJoke.category}\n`;
+        }
+        message += `😄 ${stats.mostLikedJoke.likes} like\n`;
+        message += `<i>"${stats.mostLikedJoke.content}"</i>\n\n`;
     }
 
     message += `━━━━━━━━━━━━━━━━━━━━\n`;
@@ -364,7 +368,7 @@ export async function handleAdminTopUsers(ctx: Context) {
 
     let message =
         `👑 <b>TOP 5 FOYDALANUVCHILAR</b>\n` +
-        `<i>(Eng ko'p she'r ko'rganlar)</i>\n\n` +
+        `<i>(Eng ko'p latifa ko'rganlar)</i>\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     topUsers.forEach((user, index) => {
@@ -372,7 +376,7 @@ export async function handleAdminTopUsers(ctx: Context) {
         message += `${medal} <b>#${index + 1}</b>\n`;
         message += `👤 ${user.firstName} (@${user.username})\n`;
         message += `🆔 ${user.telegramId}\n`;
-        message += `📖 ${user.viewedPoems} ta she'r ko'rgan\n`;
+        message += `� ${user.viewedJokes} ta latifa ko'rgan\n`;
         message += `💳 ${user.hasPaid ? "✅ To'lov qilgan" : "❌ To'lov qilmagan"}\n\n`;
     });
 
@@ -517,13 +521,13 @@ export async function handleApproveBytelegramId(ctx: Context, telegramId: number
     // Foydalanuvchiga xabar va tugma yuborish
     try {
         const keyboard = new InlineKeyboard()
-            .text("❤️ She'rlarni o'qish", "show_poems");
+            .text("😂 Latifalarni o'qish", "show_jokes");
 
         await ctx.api.sendMessage(
             telegramId,
             `✅ <b>To'lovingiz tasdiqlandi!</b>\n\n` +
-            `🎉 Endi siz cheksiz she'rlardan bahramand bo'lishingiz mumkin!\n\n` +
-            `Quyidagi tugmani bosing va she'rlarni o'qishni boshlang 👇`,
+            `🎉 Endi siz cheksiz latifalardan bahramand bo'lishingiz mumkin!\n\n` +
+            `Quyidagi tugmani bosing va latifalarni o'qishni boshlang 👇`,
             {
                 reply_markup: keyboard,
                 parse_mode: "HTML"
@@ -567,7 +571,7 @@ export async function handleRevokeByTelegramId(ctx: Context, telegramId: number)
     // Obunani bekor qilish
     if (!user.hasPaid) {
         return ctx.reply(
-            `ℹ️ <b>Obuna allaqachon yo'q!</b>\n\n` +
+            `⚠️ <b>Obuna allaqachon yo'q!</b>\n\n` +
             `${user.firstName} (@${user.username || "no username"})\n` +
             `🆔 ${telegramId}\n\n` +
             `Bu foydalanuvchi to'lov qilmagan yoki obuna allaqachon bekor qilingan.`,
@@ -577,7 +581,7 @@ export async function handleRevokeByTelegramId(ctx: Context, telegramId: number)
 
     // Obunani bekor qilish va revokedAt ni set qilish
     user.hasPaid = false;
-    user.revokedAt = new Date(); // Revoke qilingan vaqtni saqlash
+    user.revokedAt = new Date();
     await userRepo.save(user);
 
     // Foydalanuvchiga xabar yuborish
@@ -585,8 +589,8 @@ export async function handleRevokeByTelegramId(ctx: Context, telegramId: number)
         await ctx.api.sendMessage(
             telegramId,
             `⚠️ <b>Obunangiz bekor qilindi!</b>\n\n` +
-            `Endi siz faqat 5 ta bepul she'rni o'qishingiz mumkin.\n\n` +
-            `Cheksiz she'rlardan bahramand bo'lish uchun qaytadan to'lov qiling.\n\n` +
+            `Endi siz faqat 5 ta bepul latifani o'qishingiz mumkin.\n\n` +
+            `Cheksiz latifalardan bahramand bo'lish uchun qaytadan to'lov qiling.\n\n` +
             `Davom etish uchun /start buyrug'ini bosing.`,
             { parse_mode: "HTML" }
         );

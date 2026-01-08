@@ -1,7 +1,7 @@
 module.exports = {
     apps: [
         {
-            name: 'sevgi-sherlar-bot',
+            name: 'latifalar-bot',
             script: 'dist/main.js',
             instances: 1,
             autorestart: true,
@@ -12,7 +12,7 @@ module.exports = {
             }
         },
         {
-            name: 'sevgi-payment-gateway',
+            name: 'latifalar-payment-gateway',
             script: 'dist/gateway.js',
             instances: 1,
             autorestart: true,
