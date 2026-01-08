@@ -1,39 +1,27 @@
 module.exports = {
     apps: [
         {
-            name: 'latifalar-bot-9999',
+            name: 'sevgi-sherlar-bot',
             script: 'dist/main.js',
+            cwd: '/home/kamoliddin/Desktop/anikdod',
+            instances: 1,
+            autorestart: true,
+            watch: false,
+            max_memory_restart: '500M',
             env: {
-                PORT: 9999,
-                BASE_URL: 'http://213.230.110.176:9999',
-                // Qolgan env variablelar .env dan olinadi
+                NODE_ENV: 'production'
             }
         },
         {
-            name: 'latifalar-bot-8989',
-            script: 'dist/main.js',
+            name: 'sevgi-payment-gateway',
+            script: 'dist/gateway.js',
+            cwd: '/home/kamoliddin/Desktop/anikdod',
+            instances: 1,
+            autorestart: true,
+            watch: false,
+            max_memory_restart: '300M',
             env: {
-                PORT: 8989,
-                BASE_URL: 'http://213.230.110.176:8989',
-                // Qolgan env variablelar .env dan olinadi
-            }
-        },
-        {
-            name: 'multi-bot-8989',
-            script: 'dist/multi.js',
-            env: {
-                PORT: 8989,
-                BASE_URL: 'http://213.230.110.176:8989',
-                // .env dan BOTS/DEFAULT_BOT_KEY o'qiladi
-            }
-        },
-        {
-            name: 'multi-bot-9999',
-            script: 'dist/multi.js',
-            env: {
-                PORT: 9999,
-                BASE_URL: 'http://213.230.110.176:9999',
-                // .env dan BOTS/DEFAULT_BOT_KEY o'qiladi
+                NODE_ENV: 'production'
             }
         }
     ]
