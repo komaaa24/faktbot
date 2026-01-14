@@ -8,13 +8,13 @@
         "start": "tsx src/bot-simple.ts",
         "start:full": "tsx src/main.ts",
         "build": "tsc",
-        "start:prod": "node --env-file=.env dist/main.js",
-        "start:gateway": "node --env-file=.env dist/gateway.js",
+        "start:prod": "node -r dotenv/config dist/main.js",
+        "start:gateway": "node -r dotenv/config dist/gateway.js",
         "sync": "tsx src/scripts/sync-anecdotes.ts",
         "migration:generate": "typeorm-ts-node-esm migration:generate",
         "migration:create": "typeorm-ts-node-esm migration:create",
-        "migration:run": "npm run build && node --env-file=.env -e \"require('dotenv').config(); require('./dist/database/data-source.js').AppDataSource.initialize().then(ds => ds.runMigrations()).then(() => process.exit(0)).catch(e => {console.error(e); process.exit(1);})\"",
-        "migration:revert": "npm run build && node --env-file=.env -e \"require('dotenv').config(); require('./dist/database/data-source.js').AppDataSource.initialize().then(ds => ds.undoLastMigration()).then(() => process.exit(0)).catch(e => {console.error(e); process.exit(1);})\""
+        "migration:run": "npm run build && node -r dotenv/config -e \"require('./dist/database/data-source.js').AppDataSource.initialize().then(ds => ds.runMigrations()).then(() => process.exit(0)).catch(e => {console.error(e); process.exit(1);})\"",
+        "migration:revert": "npm run build && node -r dotenv/config -e \"require('./dist/database/data-source.js').AppDataSource.initialize().then(ds => ds.undoLastMigration()).then(() => process.exit(0)).catch(e => {console.error(e); process.exit(1);})\""
     },
     "dependencies": {
         "axios": "^1.13.2",

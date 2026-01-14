@@ -3,6 +3,7 @@ module.exports = {
         {
             name: 'latifalar-bot',
             script: 'dist/main.js',
+            node_args: ['-r', 'dotenv/config'],
             instances: 1,
             autorestart: true,
             watch: false,
