@@ -96,7 +96,7 @@ export async function handleAdminPanel(ctx: Context) {
         .text("🔄 Yangilash", "admin:refresh");
 
     const message =
-        `🎯 <b>PUL TOPISH SIRLARI BOT - ADMIN PANEL</b>\n\n` +
+        `🎯 <b>BIZNES G'OYALARI BOT - ADMIN PANEL</b>\n\n` +
         `👋 Xush kelibsiz, admin!\n\n` +
         `📊 Botning to'liq statistikasi va analytics bu yerda.\n` +
         `Kerakli bo'limni tanlang:\n\n` +
@@ -187,7 +187,7 @@ export async function handleAdminPayments(ctx: Context) {
 }
 
 /**
- * She'rlar statistikasi -> Sirlar statistikasi
+ * G'oyalar statistikasi
  */
 export async function handleAdminPoems(ctx: Context) {
     const userId = ctx.from?.id;
@@ -198,17 +198,17 @@ export async function handleAdminPoems(ctx: Context) {
     const stats = await analyticsService.getJokeStats();
 
     let message =
-        `💼 <b>SIRLAR STATISTIKASI</b>\n\n` +
+        `💼 <b>G'OYALAR STATISTIKASI</b>\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `📖 <b>Jami sirlar:</b> ${stats.totalJokes}\n` +
+        `📖 <b>Jami g'oyalar:</b> ${stats.totalJokes}\n` +
         `👁 <b>Jami ko'rishlar:</b> ${stats.totalViews.toLocaleString()}\n` +
         `👍 <b>Jami like:</b> ${stats.totalLikes}\n` +
         `👎 <b>Jami dislike:</b> ${stats.totalDislikes}\n\n` +
-        `📊 <b>O'rtacha ko'rish:</b> ${stats.avgViewsPerJoke} ta/sirr\n\n`;
+        `📊 <b>O'rtacha ko'rish:</b> ${stats.avgViewsPerJoke} ta/g'oya\n\n`;
 
     if (stats.mostViewedJoke) {
         message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-        message += `🔥 <b>Eng ommabop sir:</b>\n`;
+        message += `🔥 <b>Eng ommabop g'oya:</b>\n`;
         if (stats.mostViewedJoke.category) {
             message += `🏷️ ${stats.mostViewedJoke.category}\n`;
         }
@@ -218,7 +218,7 @@ export async function handleAdminPoems(ctx: Context) {
 
     if (stats.mostLikedJoke) {
         message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-        message += `👍 <b>Eng yoqtirilgan sir:</b>\n`;
+        message += `👍 <b>Eng yoqtirilgan g'oya:</b>\n`;
         if (stats.mostLikedJoke.category) {
             message += `🏷️ ${stats.mostLikedJoke.category}\n`;
         }
@@ -256,7 +256,7 @@ export async function handleAdminFunnel(ctx: Context) {
         `👤 ${stats.step1_start} kishi\n` +
         `📊 100%\n\n` +
         `⬇️ ${stats.conversion_startToView}% o'tdi\n\n` +
-        `<b>Qadam 2:</b> She'rlarni ko'rganlar\n` +
+        `<b>Qadam 2:</b> G'oyalarni ko'rganlar\n` +
         `📖 ${stats.step2_viewed} kishi\n` +
         `📊 ${stats.conversion_startToView}%\n\n` +
         `⬇️ ${stats.conversion_viewToPaymentClick}% o'tdi\n\n` +
@@ -521,13 +521,13 @@ export async function handleApproveBytelegramId(ctx: Context, telegramId: number
     // Foydalanuvchiga xabar va tugma yuborish
     try {
         const keyboard = new InlineKeyboard()
-            .text("💼 Sirlarni o'qish", "show_jokes");
+            .text("💼 G'oyalarni o'qish", "show_jokes");
 
         await ctx.api.sendMessage(
             telegramId,
             `✅ <b>To'lovingiz tasdiqlandi!</b>\n\n` +
-            `🎉 Endi siz cheksiz biznes sirlaridan bahramand bo'lishingiz mumkin!\n\n` +
-            `Quyidagi tugmani bosing va sirlarni o'qishni boshlang 👇`,
+            `🎉 Endi siz cheksiz biznes g'oyalaridan bahramand bo'lishingiz mumkin!\n\n` +
+            `Quyidagi tugmani bosing va g'oyalarni o'qishni boshlang 👇`,
             {
                 reply_markup: keyboard,
                 parse_mode: "HTML"
@@ -590,7 +590,7 @@ export async function handleRevokeByTelegramId(ctx: Context, telegramId: number)
             telegramId,
             `⚠️ <b>Obunangiz bekor qilindi!</b>\n\n` +
             `Endi siz faqat 5 ta bepul sirni o'qishingiz mumkin.\n\n` +
-            `Cheksiz sirlar uchun qaytadan to'lov qiling.\n\n` +
+            `Cheksiz g'oyalar uchun qaytadan to'lov qiling.\n\n` +
             `Davom etish uchun /start buyrug'ini bosing.`,
             { parse_mode: "HTML" }
         );

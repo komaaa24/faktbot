@@ -1,16 +1,16 @@
-# 💼 Pul Topish Sirlari Telegram Bot
+# 💼 Biznes G'oyalari Telegram Bot
 
-Professional Telegram bot with Click payment integration for delivering business tips and money-making secrets.
+Professional Telegram bot with Click payment integration for delivering curated business ideas and practical guidance.
 
 ## ✨ Features
 
-- 💡 Biznes va daromad bo'yicha foydali sirlar
-- 🎲 Tasodifiy sir tanlash
+- 💡 Biznes g'oyalari va amaliy tavsiyalar
+- 🎲 Tasodifiy g'oya tanlash
 - 💳 Click.uz to'lov integratsiyasi
 - 👤 Foydalanuvchilar boshqaruvi
 - 📊 Ko'rishlar statistikasi
 - 🔄 API dan avtomatik sinxronlash
-- 🎯 5 ta bepul sir
+- 🎯 5 ta bepul g'oya
 - ✅ Bir martalik to'lov - cheksiz kirish
 
 ## 🛠 Tech Stack
@@ -66,9 +66,9 @@ Professional Telegram bot with Click payment integration for delivering business
    PORT=3000
    ADMIN_IDS=your_telegram_id
 
-   # ProgramSoft API (Pul topish sirlari)
-   PROGRAMSOFT_API_URL=http://www.programsoft.uz/api
-   PROGRAMSOFT_SERVICE_ID=56
+   # ProgramSoft API (Biznes g'oyalari)
+   PROGRAMSOFT_API_URL=https://www.programsoft.uz/api
+   PROGRAMSOFT_SERVICE_ID=64
    PROGRAMSOFT_PAGES=12
    ```
 
@@ -90,7 +90,7 @@ npm run build
 npm run start:prod
 ```
 
-### Sync secrets manually:
+### Sync ideas manually:
 Use `/sync` command in bot (admin only)
 
 ## 🔧 Project Structure
@@ -101,11 +101,11 @@ src/
 │   └── data-source.ts       # TypeORM configuration
 ├── entities/
 │   ├── User.ts              # User entity
-│   ├── Joke.ts              # Secrets content (stored in jokes table)
+│   ├── Joke.ts              # Business ideas content (stored in jokes table)
 │   └── Payment.ts           # Payment entity
 ├── services/
 │   ├── user.service.ts      # User business logic
-│   ├── joke.service.ts      # ProgramSoft API integration (pul topish sirlari)
+│   ├── joke.service.ts      # ProgramSoft API integration (biznes g'oyalari)
 │   └── click.service.ts     # Click payment service
 ├── handlers/
 │   ├── bot.handlers.ts      # Bot command handlers
@@ -116,11 +116,11 @@ src/
 ## 📱 Bot Commands
 
 - `/start` - Start bot and show content
-- `/sync` - Sync secrets from API (admin only)
+- `/sync` - Sync ideas from API (admin only)
 
 ## 💰 Payment Flow
 
-1. User views 5 free secrets
+1. User views 5 free ideas
 2. Bot offers payment option
 3. Click payment link generated
 4. User completes payment
@@ -151,7 +151,7 @@ https://yourdomain.com/webhook/pay
 - hasPaid (boolean)
 - viewedJokes (counter)
 
-### Secrets (jokes table)
+### Ideas (jokes table)
 - externalId (from API)
 - category
 - content (text)

@@ -71,7 +71,7 @@ export class UserService {
     }
 
     /**
-     * Ko'rilgan sirlar sonini oshirish
+     * Ko'rilgan g'oyalar sonini oshirish
      */
     async incrementViewedJokes(telegramId: number): Promise<void> {
         const user = await this.findOrCreate(telegramId);

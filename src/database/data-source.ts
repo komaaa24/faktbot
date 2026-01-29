@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import "dotenv/config";
 import { DataSource } from "typeorm";
 import { Joke } from "../entities/Joke.js";
 import { Payment } from "../entities/Payment.js";

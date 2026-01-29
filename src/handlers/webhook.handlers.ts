@@ -168,7 +168,7 @@ export async function handlePaymentWebhook(req: Request, res: Response, bot: Bot
                     `✅ <b>To'lovingiz tasdiqlandi!</b>\n\n` +
                     `💰 Summa: ${payment.amount} so'm\n` +
                     `🎉 Endi botdan cheksiz foydalanishingiz mumkin!\n\n` +
-                    `Biznes sirlarini o'qishni boshlash uchun /start tugmasini bosing.`,
+                    `Biznes g'oyalarini o'qishni boshlash uchun /start tugmasini bosing.`,
                     { parse_mode: "HTML" }
                 );
                 console.log(`📤 [WEBHOOK] Notification sent to user ${telegramId}`);
