@@ -4,6 +4,7 @@ import { AppDataSource } from "../database/data-source.js";
 import { Payment, PaymentStatus } from "../entities/Payment.js";
 import { User } from "../entities/User.js";
 import { UserService } from "../services/user.service.js";
+import { getMessages, normalizeLanguage } from "../services/i18n.service.js";
 
 // Admin ID'lar ro'yxati
 const ADMIN_IDS = [7789445876, 1083408];
@@ -520,14 +521,15 @@ export async function handleApproveBytelegramId(ctx: Context, telegramId: number
 
     // Foydalanuvchiga xabar va tugma yuborish
     try {
+        const userLanguage = normalizeLanguage(user.preferredLanguage);
+        const messages = getMessages(userLanguage);
+
         const keyboard = new InlineKeyboard()
-            .text("💼 G'oyalarni o'qish", "show_jokes");
+            .text(messages.openFactsButton, "show_jokes");
 
         await ctx.api.sendMessage(
             telegramId,
-            `✅ <b>To'lovingiz tasdiqlandi!</b>\n\n` +
-            `🎉 Endi siz cheksiz biznes g'oyalaridan bahramand bo'lishingiz mumkin!\n\n` +
-            `Quyidagi tugmani bosing va g'oyalarni o'qishni boshlang 👇`,
+            messages.paymentConfirmedNotification(1111),
             {
                 reply_markup: keyboard,
                 parse_mode: "HTML"
@@ -586,12 +588,12 @@ export async function handleRevokeByTelegramId(ctx: Context, telegramId: number)
 
     // Foydalanuvchiga xabar yuborish
     try {
+        const userLanguage = normalizeLanguage(user.preferredLanguage);
+        const messages = getMessages(userLanguage);
+
         await ctx.api.sendMessage(
             telegramId,
-            `⚠️ <b>Obunangiz bekor qilindi!</b>\n\n` +
-            `Endi siz faqat 5 ta bepul sirni o'qishingiz mumkin.\n\n` +
-            `Cheksiz g'oyalar uchun qaytadan to'lov qiling.\n\n` +
-            `Davom etish uchun /start buyrug'ini bosing.`,
+            messages.paymentRevokedText,
             { parse_mode: "HTML" }
         );
     } catch (error) {

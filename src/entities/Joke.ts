@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 
 
 @Entity("jokes")
 @Index(["category"])
+@Index(["language"])
 export class Joke {
     @PrimaryGeneratedColumn()
     id!: number;
@@ -14,6 +15,9 @@ export class Joke {
 
     @Column({ type: "varchar", nullable: true })
     title?: string;
+
+    @Column({ type: "varchar", length: 2, default: "uz" })
+    language!: string;
 
     @Column({ type: "text" })
     content!: string;

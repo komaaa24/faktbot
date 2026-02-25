@@ -12,8 +12,12 @@ import {
     handleNext,
     handlePayment,
     handleCheckPayment,
-    syncJokesFromAPI
+    syncJokesFromAPI,
+    handleLanguageMenu,
+    handleSetLanguage
 } from "./handlers/bot.handlers.js";
+import { UserService } from "./services/user.service.js";
+import { getMessages } from "./services/i18n.service.js";
 import { handlePaymentWebhook } from "./handlers/webhook.handlers.js";
 
 function required(name: string): string {
@@ -44,9 +48,12 @@ function parseBotsEnv(): Array<{ key: string; token: string }> {
 }
 
 async function wireBot(bot: Bot) {
+    const userService = new UserService();
+
     bot.catch((err) => console.error("❌ Bot error:", err));
 
     bot.command("start", handleStart);
+    bot.command("lang", handleLanguageMenu);
     bot.command("sync", async (ctx) => {
         const userId = ctx.from?.id;
         const adminIds = (process.env.ADMIN_IDS || "").split(",").map(Number);
@@ -55,9 +62,17 @@ async function wireBot(bot: Bot) {
             return ctx.reply("⛔️ Bu buyruqdan foydalanish uchun ruxsatingiz yo'q.");
         }
 
-        await ctx.reply("🔄 G'oyalar sinxronlashtirilmoqda...");
-        await syncJokesFromAPI();
-        await ctx.reply("✅ Sinxronlash muvaffaqiyatli tugadi!");
+        const language = await userService.getPreferredLanguage(userId);
+        const messages = getMessages(language);
+
+        await ctx.reply(messages.syncStarted);
+        try {
+            await syncJokesFromAPI();
+            await ctx.reply(messages.syncCompleted);
+        } catch (error) {
+            console.error("❌ Sync command failed:", error);
+            await ctx.reply(messages.syncFailed);
+        }
     });
 
     bot.on("callback_query:data", async (ctx) => {
@@ -66,6 +81,15 @@ async function wireBot(bot: Bot) {
         try {
             if (data === "show_jokes") {
                 await handleShowJokes(ctx);
+            } else if (data === "lang:menu") {
+                await handleLanguageMenu(ctx);
+            } else if (data.startsWith("lang:set:")) {
+                const language = data.replace("lang:set:", "");
+                if (language === "uz" || language === "en" || language === "ru") {
+                    await handleSetLanguage(ctx, language);
+                } else {
+                    await ctx.answerCallbackQuery();
+                }
             } else if (data === "back_to_start") {
                 await handleStart(ctx);
             } else if (data.startsWith("next:")) {
@@ -77,7 +101,9 @@ async function wireBot(bot: Bot) {
                 const paymentId = parseInt(data.replace("check_payment:", ""), 10);
                 await handleCheckPayment(ctx, paymentId);
             } else if (data === "cancel_payment") {
-                await ctx.editMessageText("❌ To'lov bekor qilindi.\n\nQayta urinish uchun /start buyrug'ini bering.");
+                const language = await userService.getPreferredLanguage(ctx.from?.id || 0);
+                const messages = getMessages(language);
+                await ctx.editMessageText(messages.paymentCancelled);
                 await ctx.answerCallbackQuery();
             } else {
                 await ctx.answerCallbackQuery();

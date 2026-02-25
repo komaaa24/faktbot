@@ -24,6 +24,9 @@ export class User {
     @Column({ type: "int", default: 0 })
     viewedJokes!: number;
 
+    @Column({ type: "varchar", length: 2, default: "uz" })
+    preferredLanguage!: string;
+
     // Admin tomonidan revoke qilingan vaqt (agar revoke qilingan bo'lsa)
     @Column({ type: "timestamp", nullable: true })
     revokedAt?: Date;

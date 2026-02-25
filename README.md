@@ -1,16 +1,17 @@
-# 💼 Biznes G'oyalari Telegram Bot
+# 📚 Faktlar Telegram Bot
 
-Professional Telegram bot with Click payment integration for delivering curated business ideas and practical guidance.
+Professional Telegram bot with Click payment integration for delivering curated facts in Uzbek, English, and Russian.
 
 ## ✨ Features
 
-- 💡 Biznes g'oyalari va amaliy tavsiyalar
-- 🎲 Tasodifiy g'oya tanlash
+- 📚 O'zbek, ingliz va rus tilida faktlar
+- 🎲 Tasodifiy fakt tanlash
 - 💳 Click.uz to'lov integratsiyasi
 - 👤 Foydalanuvchilar boshqaruvi
 - 📊 Ko'rishlar statistikasi
 - 🔄 API dan avtomatik sinxronlash
-- 🎯 5 ta bepul g'oya
+- 🌐 Til almashtirish (`/lang` yoki inline)
+- 🎯 5 ta bepul fakt
 - ✅ Bir martalik to'lov - cheksiz kirish
 
 ## 🛠 Tech Stack
@@ -60,16 +61,20 @@ Professional Telegram bot with Click payment integration for delivering curated 
    CLICK_SERVICE_ID=87085
    CLICK_MERCHANT_ID=7269
    CLICK_SECRET_KEY=your_click_secret_key
-   CLICK_DEFAULT_AMOUNT=1111
-   CLICK_RETURN_URL=https://t.me/your_bot_username
+   PAYMENT_URL=http://213.230.110.176:9999/pay
+   PAYMENT_WEBHOOK_SECRET=your_webhook_secret
 
    PORT=3000
    ADMIN_IDS=your_telegram_id
 
-   # ProgramSoft API (Biznes g'oyalari)
+   # ProgramSoft API (Facts)
    PROGRAMSOFT_API_URL=https://www.programsoft.uz/api
-   PROGRAMSOFT_SERVICE_ID=64
-   PROGRAMSOFT_PAGES=12
+   PROGRAMSOFT_UZ_SERVICE_ID=8
+   PROGRAMSOFT_EN_SERVICE_ID=9
+   PROGRAMSOFT_RU_SERVICE_ID=145
+   PROGRAMSOFT_UZ_PAGES=6
+   PROGRAMSOFT_EN_PAGES=15
+   PROGRAMSOFT_RU_PAGES=10
    ```
 
 5. **Create database:**
@@ -90,7 +95,7 @@ npm run build
 npm run start:prod
 ```
 
-### Sync ideas manually:
+### Sync facts manually:
 Use `/sync` command in bot (admin only)
 
 ## 🔧 Project Structure
@@ -101,11 +106,11 @@ src/
 │   └── data-source.ts       # TypeORM configuration
 ├── entities/
 │   ├── User.ts              # User entity
-│   ├── Joke.ts              # Business ideas content (stored in jokes table)
+│   ├── Joke.ts              # Facts content (stored in jokes table)
 │   └── Payment.ts           # Payment entity
 ├── services/
 │   ├── user.service.ts      # User business logic
-│   ├── joke.service.ts      # ProgramSoft API integration (biznes g'oyalari)
+│   ├── joke.service.ts      # ProgramSoft API integration (facts)
 │   └── click.service.ts     # Click payment service
 ├── handlers/
 │   ├── bot.handlers.ts      # Bot command handlers
@@ -116,11 +121,12 @@ src/
 ## 📱 Bot Commands
 
 - `/start` - Start bot and show content
-- `/sync` - Sync ideas from API (admin only)
+- `/lang` - Change language (Uzbek / English / Russian)
+- `/sync` - Sync facts from API (admin only)
 
 ## 💰 Payment Flow
 
-1. User views 5 free ideas
+1. User views 5 free facts
 2. Bot offers payment option
 3. Click payment link generated
 4. User completes payment
@@ -151,8 +157,9 @@ https://yourdomain.com/webhook/pay
 - hasPaid (boolean)
 - viewedJokes (counter)
 
-### Ideas (jokes table)
+### Facts (jokes table)
 - externalId (from API)
+- language (uz/en/ru)
 - category
 - content (text)
 - views (counter)
@@ -174,16 +181,20 @@ https://yourdomain.com/webhook/pay
 | DB_USER | Database user | ✅ |
 | DB_PASS | Database password | ✅ |
 | DB_NAME | Database name | ✅ |
+| PROGRAMSOFT_API_URL | ProgramSoft API base | ✅ |
+| PROGRAMSOFT_UZ_SERVICE_ID | Uzbek facts service ID (`8`) | ✅ |
+| PROGRAMSOFT_EN_SERVICE_ID | English facts service ID (`9`) | ✅ |
+| PROGRAMSOFT_RU_SERVICE_ID | Russian facts service ID (`145`) | ✅ |
+| PROGRAMSOFT_UZ_PAGES | Uzbek pages to sync | ❌ |
+| PROGRAMSOFT_EN_PAGES | English pages to sync | ❌ |
+| PROGRAMSOFT_RU_PAGES | Russian pages to sync | ❌ |
 | CLICK_SERVICE_ID | Click service ID | ✅ |
 | CLICK_MERCHANT_ID | Click merchant ID | ✅ |
 | CLICK_SECRET_KEY | Click secret key | ✅ |
-| CLICK_DEFAULT_AMOUNT | Payment amount (tiyin) | ✅ |
-| CLICK_RETURN_URL | Return URL after payment | ✅ |
+| PAYMENT_URL | Payment URL | ✅ |
+| PAYMENT_WEBHOOK_SECRET | Webhook secret | ❌ |
 | PORT | Webhook server port | ❌ |
 | ADMIN_IDS | Admin Telegram IDs | ❌ |
-| PROGRAMSOFT_API_URL | ProgramSoft API base | ✅ |
-| PROGRAMSOFT_SERVICE_ID | ProgramSoft service ID | ✅ |
-| PROGRAMSOFT_PAGES | API pages to sync | ❌ |
 
 ## 🐛 Troubleshooting
 

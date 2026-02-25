@@ -1,6 +1,8 @@
 import { Repository } from "typeorm";
 import { User } from "../entities/User.js";
 import { AppDataSource } from "../database/data-source.js";
+import { BotLanguage } from "../types/language.js";
+import { normalizeLanguage } from "./i18n.service.js";
 
 export class UserService {
     private userRepo: Repository<User>;
@@ -16,10 +18,13 @@ export class UserService {
         username?: string;
         firstName?: string;
         lastName?: string;
+        preferredLanguage?: string;
     }): Promise<User> {
         let user = await this.userRepo.findOne({
             where: { telegramId }
         });
+
+        const fallbackLanguage = normalizeLanguage(userData?.preferredLanguage);
 
         if (!user) {
             user = this.userRepo.create({
@@ -27,14 +32,28 @@ export class UserService {
                 username: userData?.username,
                 firstName: userData?.firstName,
                 lastName: userData?.lastName,
+                preferredLanguage: fallbackLanguage
             });
             await this.userRepo.save(user);
         } else if (userData) {
-            // Update user info
-            user.username = userData.username || user.username;
-            user.firstName = userData.firstName || user.firstName;
-            user.lastName = userData.lastName || user.lastName;
-            await this.userRepo.save(user);
+            const nextUsername = userData.username || user.username;
+            const nextFirstName = userData.firstName || user.firstName;
+            const nextLastName = userData.lastName || user.lastName;
+            const nextLanguage = normalizeLanguage(user.preferredLanguage || fallbackLanguage);
+
+            const hasChanges =
+                nextUsername !== user.username ||
+                nextFirstName !== user.firstName ||
+                nextLastName !== user.lastName ||
+                nextLanguage !== user.preferredLanguage;
+
+            if (hasChanges) {
+                user.username = nextUsername;
+                user.firstName = nextFirstName;
+                user.lastName = nextLastName;
+                user.preferredLanguage = nextLanguage;
+                await this.userRepo.save(user);
+            }
         }
 
         return user;
@@ -77,5 +96,24 @@ export class UserService {
         const user = await this.findOrCreate(telegramId);
         user.viewedJokes += 1;
         await this.userRepo.save(user);
+    }
+
+    async getPreferredLanguage(telegramId: number): Promise<BotLanguage> {
+        const user = await this.userRepo.findOne({
+            where: { telegramId }
+        });
+
+        return normalizeLanguage(user?.preferredLanguage);
+    }
+
+    async setPreferredLanguage(telegramId: number, language: BotLanguage): Promise<void> {
+        await this.findOrCreate(telegramId, {
+            preferredLanguage: language
+        });
+
+        await this.userRepo.update(
+            { telegramId },
+            { preferredLanguage: normalizeLanguage(language) }
+        );
     }
 }

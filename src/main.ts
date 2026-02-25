@@ -14,7 +14,9 @@ import {
     handlePayment,
     handleCheckPayment,
     syncJokesFromAPI,
-    handleUploadBackground
+    handleUploadBackground,
+    handleLanguageMenu,
+    handleSetLanguage
 } from "./handlers/bot.handlers.js";
 import {
     handlePaymentWebhook
@@ -25,10 +27,16 @@ import {
     handleApproveBytelegramId,
     handleRevokeByTelegramId
 } from "./handlers/admin.handlers.js";
+import { UserService } from "./services/user.service.js";
+import { getMessages, normalizeLanguage } from "./services/i18n.service.js";
 
 // Environment variables validation
 const requiredEnvVars = [
-    "BOT_TOKEN"
+    "BOT_TOKEN",
+    "PROGRAMSOFT_API_URL",
+    "PROGRAMSOFT_UZ_SERVICE_ID",
+    "PROGRAMSOFT_EN_SERVICE_ID",
+    "PROGRAMSOFT_RU_SERVICE_ID"
 ];
 
 for (const envVar of requiredEnvVars) {
@@ -43,6 +51,7 @@ const PORT = Number(process.env.PORT) || 3000;
 
 // Initialize bot
 const bot = new Bot(BOT_TOKEN);
+const userService = new UserService();
 
 // Error handling
 bot.catch((err) => {
@@ -53,6 +62,7 @@ bot.catch((err) => {
  * Bot command handlers
  */
 bot.command("start", handleStart);
+bot.command("lang", handleLanguageMenu);
 
 // Super Admin Panel
 bot.command("admin", handleAdminPanel);
@@ -120,9 +130,17 @@ bot.command("sync", async (ctx) => {
         return ctx.reply("⛔️ Bu buyruqdan foydalanish uchun ruxsatingiz yo'q.");
     }
 
-    await ctx.reply("🔄 G'oyalar sinxronlashtirilmoqda...");
-    await syncJokesFromAPI();
-    await ctx.reply("✅ Sinxronlash muvaffaqiyatli tugadi!");
+    const language = await userService.getPreferredLanguage(userId);
+    const messages = getMessages(language);
+
+    await ctx.reply(messages.syncStarted);
+    try {
+        await syncJokesFromAPI();
+        await ctx.reply(messages.syncCompleted);
+    } catch (error) {
+        console.error("❌ Sync command failed:", error);
+        await ctx.reply(messages.syncFailed);
+    }
 });
 
 /**
@@ -136,6 +154,15 @@ bot.on("callback_query:data", async (ctx) => {
         if (data.startsWith("admin:")) {
             const action = data.replace("admin:", "");
             await handleAdminCallback(ctx, action);
+        } else if (data === "lang:menu") {
+            await handleLanguageMenu(ctx);
+        } else if (data.startsWith("lang:set:")) {
+            const language = data.replace("lang:set:", "");
+            if (language === "uz" || language === "en" || language === "ru") {
+                await handleSetLanguage(ctx, language);
+            } else {
+                await ctx.answerCallbackQuery();
+            }
         } else if (data === "show_jokes") {
             await handleShowJokes(ctx);
         } else if (data === "back_to_start") {
@@ -149,8 +176,10 @@ bot.on("callback_query:data", async (ctx) => {
             const paymentId = parseInt(data.replace("check_payment:", ""));
             await handleCheckPayment(ctx, paymentId);
         } else if (data === "cancel_payment") {
+            const language = await userService.getPreferredLanguage(ctx.from?.id || 0);
+            const messages = getMessages(language);
             await ctx.editMessageText(
-                "❌ To'lov bekor qilindi.\n\nQayta urinish uchun /start buyrug'ini bering."
+                messages.paymentCancelled
             );
             await ctx.answerCallbackQuery();
         } else {
@@ -202,12 +231,13 @@ app.post("/internal/send-payment-notification", async (req, res) => {
         const keyboard = new InlineKeyboard()
             .url("🔙 Botga qaytish", `https://t.me/${bot.botInfo.username}`);
 
+        const preferredLanguage = await userService.getPreferredLanguage(Number(telegramId));
+        const messages = getMessages(normalizeLanguage(preferredLanguage));
+        const paymentAmount = Number(amount) || 1111;
+
         await bot.api.sendMessage(
             telegramId,
-            `✅ <b>To'lovingiz tasdiqlandi!</b>\n\n` +
-            `💰 Summa: ${amount || 1111} so'm\n` +
-            `🎉 Endi botdan cheksiz foydalanishingiz mumkin!\n\n` +
-            `Biznes g'oyalarini o'qishni boshlash uchun quyidagi tugmani bosing 👇`,
+            messages.paymentConfirmedNotification(paymentAmount),
             {
                 parse_mode: "HTML",
                 reply_markup: keyboard
@@ -240,7 +270,7 @@ app.post("/webhook/pay", async (req, res) => {
  */
 async function main() {
     try {
-        console.log("🚀 Starting Biznes G'oyalari Bot...");
+        console.log("🚀 Starting Facts Bot...");
 
         // Initialize main database
         console.log("📦 Connecting to main database...");
@@ -257,8 +287,8 @@ async function main() {
             console.warn("⚠️ Sherlar database connection failed (will use local payments only):", errorMsg);
         }
 
-        // Sync ideas on startup
-        console.log("🔄 Syncing business ideas from API...");
+        // Sync facts on startup
+        console.log("🔄 Syncing facts from API...");
         await syncJokesFromAPI();
         console.log("✅ Content synced");
 
@@ -280,13 +310,30 @@ async function main() {
 
             // Oddiy foydalanuvchilar uchun komandalar
             await bot.api.setMyCommands([
-                { command: "start", description: "🚀 Botni qayta boshlash" }
+                { command: "start", description: "🚀 Botni qayta boshlash" },
+                { command: "lang", description: "🌐 Til / Language" }
             ]);
+
+            await bot.api.setMyCommands([
+                { command: "start", description: "Restart bot" },
+                { command: "lang", description: "Change language" }
+            ], { language_code: "en" });
+
+            await bot.api.setMyCommands([
+                { command: "start", description: "Перезапустить бота" },
+                { command: "lang", description: "Изменить язык" }
+            ], { language_code: "ru" });
+
+            await bot.api.setMyCommands([
+                { command: "start", description: "🚀 Botni qayta boshlash" },
+                { command: "lang", description: "🌐 Tilni o'zgartirish" }
+            ], { language_code: "uz" });
 
             // Admin uchun maxsus komandalar (har bir admin uchun alohida)
             const ADMIN_IDS = [7789445876, 1083408];
             const adminCommands = [
                 { command: "start", description: "🚀 Botni qayta boshlash" },
+                { command: "lang", description: "🌐 Tilni o'zgartirish" },
                 { command: "admin", description: "👑 Admin panel" },
                 { command: "approve", description: "✅ To'lovni tasdiqlash" },
                 { command: "revoke", description: "🚫 Obunani bekor qilish" }

@@ -1,3 +1,5 @@
+import { BotLanguage } from "../types/language.js";
+
 interface JokeItem {
     id: number;
     text: string;
@@ -9,18 +11,61 @@ interface JokeItem {
 
 interface ProgramSoftResponse {
     data?: JokeItem[];
-    links?: any;
-    meta?: any;
+    links?: {
+        first?: string | null;
+        last?: string | null;
+        prev?: string | null;
+        next?: string | null;
+    };
+    meta?: {
+        current_page?: number;
+        last_page?: number;
+        per_page?: number;
+        total?: number;
+    };
+}
+
+export interface FetchFactsPageResult {
+    items: JokeItem[];
+    currentPage: number;
+    lastPage?: number;
+}
+
+function resolveServiceId(language: BotLanguage): string {
+    const envKeyByLanguage: Record<BotLanguage, string> = {
+        uz: "PROGRAMSOFT_UZ_SERVICE_ID",
+        en: "PROGRAMSOFT_EN_SERVICE_ID",
+        ru: "PROGRAMSOFT_RU_SERVICE_ID"
+    };
+
+    const envKey = envKeyByLanguage[language];
+    const serviceId = (process.env[envKey] || "").trim();
+
+    if (!serviceId) {
+        throw new Error(`Missing required env variable: ${envKey}`);
+    }
+
+    return serviceId;
+}
+
+function resolveApiBaseUrl(): string {
+    const apiBaseUrl = (process.env.PROGRAMSOFT_API_URL || "").trim();
+    if (!apiBaseUrl) {
+        throw new Error("Missing required env variable: PROGRAMSOFT_API_URL");
+    }
+    return apiBaseUrl.endsWith("/") ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
 }
 
 /**
- * ProgramSoft API dan biznes g'oyalar olish
+ * ProgramSoft API dan faktlarni olish (til bo'yicha)
  */
-export async function fetchJokesFromAPI(page: number = 1): Promise<JokeItem[]> {
+export async function fetchFactsFromAPI(
+    language: BotLanguage,
+    page: number = 1
+): Promise<FetchFactsPageResult> {
     try {
-        const apiBaseUrl = process.env.PROGRAMSOFT_API_URL || "https://www.programsoft.uz/api";
-        const serviceId = process.env.PROGRAMSOFT_SERVICE_ID || "64";
-        const base = apiBaseUrl.endsWith("/") ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+        const base = resolveApiBaseUrl();
+        const serviceId = resolveServiceId(language);
         const url = `${base}/service/${serviceId}?page=${page}`;
         const response = await fetch(url);
 
@@ -28,19 +73,25 @@ export async function fetchJokesFromAPI(page: number = 1): Promise<JokeItem[]> {
             throw new Error(`API error: ${response.status} ${response.statusText}`);
         }
 
-        const json = await response.json() as ProgramSoftResponse;
-
-        // API response strukturasini tekshirish
+        const json = (await response.json()) as ProgramSoftResponse;
         const items = json?.data || [];
 
         if (!Array.isArray(items)) {
-            console.warn("API unexpected format, no items array found");
-            return [];
+            console.warn(`⚠️ API unexpected format for ${language} page ${page}`);
+            return {
+                items: [],
+                currentPage: page,
+                lastPage: undefined
+            };
         }
 
-        return items;
+        return {
+            items,
+            currentPage: json.meta?.current_page || page,
+            lastPage: json.meta?.last_page
+        };
     } catch (error) {
-        console.error("Error fetching ideas from API:", error);
+        console.error(`❌ Error fetching facts from API (${language}, page=${page}):`, error);
         throw error;
     }
 }
@@ -102,28 +153,30 @@ function splitIdeaText(raw: string): { title?: string; body: string } {
 }
 
 /**
- * G'oyani formatlash
+ * Faktni standart formatga o'tkazish
  */
-export function formatJoke(item: JokeItem): {
+export function formatJoke(item: JokeItem, language: BotLanguage): {
     externalId: string;
     content: string;
     category?: string;
     title?: string;
+    language: BotLanguage;
     likes: number;
     dislikes: number;
 } {
-    const externalId = String(item.id);
-    const raw = item.text || "G'oya topilmadi";
+    const externalId = `${language}:${item.id}`;
+    const raw = item.text || "Fact not found";
     const { title, body } = splitIdeaText(raw);
     const content = body || raw;
-    const category = item.caption || undefined;
+    const category = item.caption?.trim() || undefined;
 
     return {
         externalId,
         content,
         category,
         title,
-        likes: parseInt(item.likes || "0") || 0,
-        dislikes: parseInt(item.dislikes || "0") || 0
+        language,
+        likes: parseInt(item.likes || "0", 10) || 0,
+        dislikes: parseInt(item.dislikes || "0", 10) || 0
     };
 }

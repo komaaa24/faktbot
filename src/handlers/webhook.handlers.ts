@@ -5,6 +5,7 @@ import { AppDataSource } from "../database/data-source.js";
 import { UserService } from "../services/user.service.js";
 import { Bot } from "grammy";
 import { verifyClickPaymentByMTI } from "../services/click-verify.service.js";
+import { getMessages, normalizeLanguage } from "../services/i18n.service.js";
 
 const userService = new UserService();
 
@@ -163,12 +164,12 @@ export async function handlePaymentWebhook(req: Request, res: Response, bot: Bot
 
             // 🎉 Telegram orqali tasdiq xabari yuborish
             try {
+                const language = normalizeLanguage(payment.user?.preferredLanguage);
+                const messages = getMessages(language);
+
                 await bot.api.sendMessage(
                     telegramId,
-                    `✅ <b>To'lovingiz tasdiqlandi!</b>\n\n` +
-                    `💰 Summa: ${payment.amount} so'm\n` +
-                    `🎉 Endi botdan cheksiz foydalanishingiz mumkin!\n\n` +
-                    `Biznes g'oyalarini o'qishni boshlash uchun /start tugmasini bosing.`,
+                    messages.paymentConfirmedNotification(Number(payment.amount)),
                     { parse_mode: "HTML" }
                 );
                 console.log(`📤 [WEBHOOK] Notification sent to user ${telegramId}`);
