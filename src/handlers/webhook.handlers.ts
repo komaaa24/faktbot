@@ -1,19 +1,24 @@
 import { Request, Response } from "express";
-import { Repository } from "typeorm";
 import { Payment, PaymentStatus } from "../entities/Payment.js";
 import { AppDataSource } from "../database/data-source.js";
 import { UserService } from "../services/user.service.js";
 import { Bot } from "grammy";
 import { verifyClickPaymentByMTI } from "../services/click-verify.service.js";
 import { getMessages, normalizeLanguage } from "../services/i18n.service.js";
+import { normalizeBotUsername } from "../utils/bot-context.js";
 
 const userService = new UserService();
+
+export interface WebhookBotResolver {
+    fallbackBot: Bot;
+    getBotByUsername?: (botUsername: string) => Bot | undefined;
+}
 
 /**
  * 💰 Click to'lov webhook handler
  * To'lov amalga oshgach avtomatik tasdiqlanadi
  */
-export async function handlePaymentWebhook(req: Request, res: Response, bot: Bot) {
+export async function handlePaymentWebhook(req: Request, res: Response, botResolver: WebhookBotResolver) {
     const { tx, status, amount, user_id } = req.body;
 
     console.log("📥 [WEBHOOK] Click payment notification:", {
@@ -51,6 +56,32 @@ export async function handlePaymentWebhook(req: Request, res: Response, bot: Bot
         console.warn("⚠️ [WEBHOOK] Payment not found for tx:", tx);
         return res.status(404).json({
             error: "Payment not found"
+        });
+    }
+
+    const paymentBotUsername = normalizeBotUsername(payment.botUsername || payment.metadata?.botUsername);
+    const paymentTelegramId = Number(payment.metadata?.telegramId || payment.user?.telegramId || 0);
+    const webhookUserId = Number(user_id || 0);
+
+    if (webhookUserId > 0 && paymentTelegramId > 0 && webhookUserId !== paymentTelegramId) {
+        console.warn("❌ [WEBHOOK] User mismatch:", {
+            tx,
+            expectedTelegramId: paymentTelegramId,
+            webhookUserId
+        });
+
+        payment.status = PaymentStatus.FAILED;
+        payment.metadata = {
+            ...payment.metadata,
+            failedAt: new Date().toISOString(),
+            failedReason: "user_mismatch",
+            webhookUserId
+        };
+        await paymentRepo.save(payment);
+
+        return res.status(400).json({
+            success: false,
+            message: "User mismatch"
         });
     }
 
@@ -145,27 +176,30 @@ export async function handlePaymentWebhook(req: Request, res: Response, bot: Bot
             return res.status(500).json({ success: false, message: "Click verify error" });
         }
 
-        // To'lovni tasdiqlash
-        payment.status = PaymentStatus.PAID;
-        payment.metadata = {
-            ...payment.metadata,
-            paidAt: new Date().toISOString(),
+    // To'lovni tasdiqlash
+    payment.status = PaymentStatus.PAID;
+    payment.botUsername = paymentBotUsername;
+    payment.metadata = {
+        ...payment.metadata,
+        paidAt: new Date().toISOString(),
             webhookAmount: amount,
-            webhookUserId: user_id
+            webhookUserId: user_id,
+            botUsername: paymentBotUsername
         };
         await paymentRepo.save(payment);
 
         // Foydalanuvchini to'lagan deb belgilash
-        const telegramId = payment.metadata?.telegramId;
+        const telegramId = paymentTelegramId;
         if (telegramId) {
-            await userService.markAsPaid(telegramId);
+            await userService.markAsPaid(telegramId, paymentBotUsername);
 
-            console.log(`✅ [WEBHOOK] User ${telegramId} marked as paid`);
+            console.log(`✅ [WEBHOOK] User ${telegramId} marked as paid for @${paymentBotUsername}`);
 
             // 🎉 Telegram orqali tasdiq xabari yuborish
             try {
                 const language = normalizeLanguage(payment.user?.preferredLanguage);
                 const messages = getMessages(language);
+                const bot = botResolver.getBotByUsername?.(paymentBotUsername) || botResolver.fallbackBot;
 
                 await bot.api.sendMessage(
                     telegramId,

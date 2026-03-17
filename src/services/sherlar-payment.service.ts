@@ -14,6 +14,13 @@ import { SherlarDataSource } from "../database/sherlar-data-source.js";
  * - updated_at: timestamp
  */
 export class SherlarPaymentService {
+    private async ensureConnection(): Promise<void> {
+        if (!SherlarDataSource.isInitialized) {
+            await SherlarDataSource.initialize();
+            console.log("✅ Sherlar database connected");
+        }
+    }
+
     /**
      * Telegram ID orqali to'lov qilganmi tekshirish (sana bilan)
      * @param telegramId - Foydalanuvchi Telegram ID (user_id)
@@ -21,11 +28,7 @@ export class SherlarPaymentService {
      */
     async hasValidPayment(telegramId: number): Promise<{ hasPaid: boolean; paymentDate?: Date }> {
         try {
-            // Sherlar database'ga ulanish
-            if (!SherlarDataSource.isInitialized) {
-                await SherlarDataSource.initialize();
-                console.log("✅ Sherlar database connected");
-            }
+            await this.ensureConnection();
 
             // To'lovni tekshirish - user_id ustunidan foydalanish
             // Status: 'PAID' yoki 'paid' (case-insensitive)
@@ -81,9 +84,7 @@ export class SherlarPaymentService {
      */
     async getPaymentInfo(telegramId: number): Promise<any> {
         try {
-            if (!SherlarDataSource.isInitialized) {
-                await SherlarDataSource.initialize();
-            }
+            await this.ensureConnection();
 
             const query = `
                 SELECT 
@@ -128,9 +129,7 @@ export class SherlarPaymentService {
      */
     async getAllPayments(limit: number = 50): Promise<any[]> {
         try {
-            if (!SherlarDataSource.isInitialized) {
-                await SherlarDataSource.initialize();
-            }
+            await this.ensureConnection();
 
             const query = `
                 SELECT 
@@ -153,6 +152,46 @@ export class SherlarPaymentService {
         } catch (error) {
             console.error("❌ Error getting all payments:", error);
             return [];
+        }
+    }
+
+    async findPaidPaymentByTransactionId(transactionParam: string): Promise<{
+        hasPaid: boolean;
+        paymentDate?: Date;
+        userId?: number;
+        paymentId?: number;
+    }> {
+        try {
+            await this.ensureConnection();
+
+            const query = `
+                SELECT
+                    id,
+                    user_id,
+                    created_at
+                FROM payments
+                WHERE click_merchant_trans_id = $1
+                  AND amount = 1111
+                  AND UPPER(status) = 'PAID'
+                ORDER BY created_at DESC
+                LIMIT 1
+            `;
+
+            const result = await SherlarDataSource.query(query, [transactionParam]);
+            if (result && result.length > 0) {
+                const payment = result[0];
+                return {
+                    hasPaid: true,
+                    paymentDate: new Date(payment.created_at),
+                    userId: Number(payment.user_id),
+                    paymentId: Number(payment.id)
+                };
+            }
+
+            return { hasPaid: false };
+        } catch (error) {
+            console.error("❌ Error checking sherlar payment by transaction:", error);
+            return { hasPaid: false };
         }
     }
 }

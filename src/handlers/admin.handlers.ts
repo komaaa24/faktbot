@@ -5,11 +5,16 @@ import { Payment, PaymentStatus } from "../entities/Payment.js";
 import { User } from "../entities/User.js";
 import { UserService } from "../services/user.service.js";
 import { getMessages, normalizeLanguage } from "../services/i18n.service.js";
+import { normalizeBotUsername } from "../utils/bot-context.js";
 
 // Admin ID'lar ro'yxati
 const ADMIN_IDS = [7789445876, 1083408];
 const analyticsService = new AnalyticsService();
 const userService = new UserService();
+
+function getContextBotUsername(ctx: Context): string {
+    return normalizeBotUsername(ctx.me?.username);
+}
 
 /**
  * Admin tekshirish
@@ -423,9 +428,11 @@ export async function handleAdminPendingPayments(ctx: Context) {
             const username = payment.user?.username || "No username";
             const firstName = payment.user?.firstName || "User";
             const telegramId = payment.metadata?.telegramId || payment.user?.telegramId;
+            const paymentBotUsername = normalizeBotUsername(payment.botUsername || payment.metadata?.botUsername || payment.user?.botUsername);
 
             message += `<b>${index + 1}. ${firstName}</b> (@${username})\n`;
             message += `🆔 ${telegramId}\n`;
+            message += `🤖 @${paymentBotUsername}\n`;
             message += `💰 ${payment.amount} so'm\n`;
             message += `📅 ${payment.createdAt.toLocaleString("uz-UZ")}\n`;
             message += `🔗 TX: <code>${payment.transactionParam}</code>\n\n`;
@@ -468,19 +475,23 @@ export async function handleApproveBytelegramId(ctx: Context, telegramId: number
         await ctx.reply("⛔️ Sizda ruxsat yo'q!");
         return;
     }
+    const botUsername = getContextBotUsername(ctx);
 
     const userRepo = AppDataSource.getRepository(User);
     const paymentRepo = AppDataSource.getRepository(Payment);
 
     // Foydalanuvchini topish
     const user = await userRepo.findOne({
-        where: { telegramId: telegramId }
+        where: {
+            telegramId,
+            botUsername
+        }
     });
 
     if (!user) {
         await ctx.reply(
             `❌ <b>Xatolik!</b>\n\n` +
-            `Telegram ID ${telegramId} topilmadi!\n` +
+            `Telegram ID ${telegramId} @${botUsername} ichida topilmadi!\n` +
             `Foydalanuvchi botda /start bosganmi?`,
             { parse_mode: "HTML" }
         );
@@ -501,6 +512,7 @@ export async function handleApproveBytelegramId(ctx: Context, telegramId: number
     const pendingPayment = await paymentRepo.findOne({
         where: {
             userId: user.id,
+            botUsername,
             status: PaymentStatus.PENDING
         }
     });
@@ -517,7 +529,7 @@ export async function handleApproveBytelegramId(ctx: Context, telegramId: number
     }
 
     // Foydalanuvchini to'lagan deb belgilash
-    await userService.markAsPaid(telegramId);
+    await userService.markAsPaid(telegramId, botUsername);
 
     // Foydalanuvchiga xabar va tugma yuborish
     try {
@@ -542,7 +554,8 @@ export async function handleApproveBytelegramId(ctx: Context, telegramId: number
     await ctx.reply(
         `✅ <b>Muvaffaqiyatli!</b>\n\n` +
         `${user.firstName} (@${user.username || "no username"})\n` +
-        `🆔 ${telegramId}\n\n` +
+        `🆔 ${telegramId}\n` +
+        `🤖 @${botUsername}\n\n` +
         `To'lov tasdiqlandi va foydalanuvchiga xabar yuborildi! 🎉`,
         { parse_mode: "HTML" }
     );
@@ -557,14 +570,21 @@ export async function handleRevokeByTelegramId(ctx: Context, telegramId: number)
     if (!isSuperAdmin(userId)) {
         return ctx.reply("⛔️ Bu buyruq faqat super admin uchun!");
     }
+    const botUsername = getContextBotUsername(ctx);
 
     const userRepo = AppDataSource.getRepository(User);
-    const user = await userRepo.findOne({ where: { telegramId } });
+    const user = await userRepo.findOne({
+        where: {
+            telegramId,
+            botUsername
+        }
+    });
 
     if (!user) {
         return ctx.reply(
             `❌ <b>Foydalanuvchi topilmadi!</b>\n\n` +
-            `🆔 Telegram ID: ${telegramId}\n\n` +
+            `🆔 Telegram ID: ${telegramId}\n` +
+            `🤖 Bot: @${botUsername}\n\n` +
             `Bu ID bilan foydalanuvchi database'da yo'q.`,
             { parse_mode: "HTML" }
         );
@@ -574,11 +594,12 @@ export async function handleRevokeByTelegramId(ctx: Context, telegramId: number)
     if (!user.hasPaid) {
         return ctx.reply(
             `⚠️ <b>Obuna allaqachon yo'q!</b>\n\n` +
-            `${user.firstName} (@${user.username || "no username"})\n` +
-            `🆔 ${telegramId}\n\n` +
-            `Bu foydalanuvchi to'lov qilmagan yoki obuna allaqachon bekor qilingan.`,
-            { parse_mode: "HTML" }
-        );
+        `${user.firstName} (@${user.username || "no username"})\n` +
+        `🆔 ${telegramId}\n` +
+        `🤖 @${botUsername}\n\n` +
+        `Bu foydalanuvchi to'lov qilmagan yoki obuna allaqachon bekor qilingan.`,
+        { parse_mode: "HTML" }
+    );
     }
 
     // Obunani bekor qilish va revokedAt ni set qilish
@@ -603,7 +624,8 @@ export async function handleRevokeByTelegramId(ctx: Context, telegramId: number)
     await ctx.reply(
         `✅ <b>Obuna bekor qilindi!</b>\n\n` +
         `${user.firstName} (@${user.username || "no username"})\n` +
-        `🆔 ${telegramId}\n\n` +
+        `🆔 ${telegramId}\n` +
+        `🤖 @${botUsername}\n\n` +
         `Foydalanuvchining obunasi bekor qilindi va xabar yuborildi! 🚫`,
         { parse_mode: "HTML" }
     );

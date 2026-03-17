@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from "typeorm";
 import { User } from "./User.js";
 
 export enum PaymentStatus {
@@ -9,6 +9,7 @@ export enum PaymentStatus {
 }
 
 @Entity("payments")
+@Index("IDX_payments_botUsername", ["botUsername"])
 export class Payment {
     @PrimaryGeneratedColumn()
     id!: number;
@@ -22,6 +23,9 @@ export class Payment {
 
     @Column({ type: "int" })
     userId!: number;
+
+    @Column({ type: "varchar", default: "legacy" })
+    botUsername!: string;
 
     @Column({ type: "decimal", precision: 10, scale: 2 })
     amount!: number;

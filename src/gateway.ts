@@ -8,14 +8,113 @@ import axios from "axios";
 import { AppDataSource } from "./database/data-source.js";
 import { SherlarDataSource } from "./database/sherlar-data-source.js";
 import { Payment, PaymentStatus } from "./entities/Payment.js";
-import { User } from "./entities/User.js";
 import { UserService } from "./services/user.service.js";
 import { generatePaymentLink, generateTransactionParam, getFixedPaymentAmount } from "./services/click.service.js";
+import { normalizeBotUsername } from "./utils/bot-context.js";
 
 function required(name: string): string {
     const value = (process.env[name] || "").trim();
     if (!value) throw new Error(`Missing env: ${name}`);
     return value;
+}
+
+async function persistSherlarPayment(tx: string, userId: number): Promise<void> {
+    try {
+        const query = `
+            INSERT INTO payments (user_id, amount, status, created_at, updated_at, click_merchant_trans_id)
+            VALUES ($1, $2, $3, NOW(), NOW(), $4)
+            ON CONFLICT (click_merchant_trans_id)
+            DO UPDATE SET
+                status = EXCLUDED.status,
+                updated_at = NOW()
+            RETURNING id, user_id, amount, status
+        `;
+
+        const result = await SherlarDataSource.query(query, [
+            userId,
+            1111,
+            "PAID",
+            tx
+        ]);
+
+        console.log("✅ [GATEWAY] Payment saved to sherlar DB:", result[0]);
+    } catch (dbError) {
+        console.error("❌ [GATEWAY] Failed to save to sherlar DB:", dbError);
+    }
+}
+
+async function finalizeScopedPayment(
+    tx: string,
+    status: string,
+    userIdFromWebhook: number | undefined,
+    userService: UserService
+): Promise<void> {
+    if (!(status === "success" || status === "paid" || status === "completed")) {
+        return;
+    }
+
+    const paymentRepo = AppDataSource.getRepository(Payment);
+    const payment = await paymentRepo.findOne({
+        where: { transactionParam: tx },
+        relations: ["user"]
+    });
+
+    if (!payment) {
+        console.warn("⚠️ [GATEWAY] Payment not found for tx:", tx);
+        return;
+    }
+
+    const botUsername = normalizeBotUsername(payment.botUsername || payment.metadata?.botUsername);
+    const telegramId = Number(payment.metadata?.telegramId || payment.user?.telegramId || 0);
+
+    if (userIdFromWebhook && telegramId && userIdFromWebhook !== telegramId) {
+        payment.status = PaymentStatus.FAILED;
+        payment.metadata = {
+            ...payment.metadata,
+            failedAt: new Date().toISOString(),
+            failedReason: "user_mismatch",
+            webhookUserId: userIdFromWebhook
+        };
+        await paymentRepo.save(payment);
+        console.warn("❌ [GATEWAY] User mismatch:", {
+            tx,
+            expectedTelegramId: telegramId,
+            webhookUserId: userIdFromWebhook
+        });
+        return;
+    }
+
+    payment.status = PaymentStatus.PAID;
+    payment.botUsername = botUsername;
+    payment.metadata = {
+        ...payment.metadata,
+        botUsername,
+        paidAt: new Date().toISOString(),
+        webhookUserId: userIdFromWebhook
+    };
+    await paymentRepo.save(payment);
+
+    if (!telegramId) {
+        return;
+    }
+
+    await userService.markAsPaid(telegramId, botUsername);
+    console.log(`✅ [GATEWAY] User ${telegramId} marked as paid for @${botUsername}`);
+
+    try {
+        await axios.post(
+            process.env.INTERNAL_BOT_NOTIFY_URL || "http://localhost:9988/internal/send-payment-notification",
+            {
+                telegramId,
+                amount: payment.amount,
+                botUsername
+            },
+            { timeout: 5000 }
+        );
+        console.log(`📤 [GATEWAY] Notification request forwarded for user ${telegramId} via @${botUsername}`);
+    } catch (notifError) {
+        console.error("❌ [GATEWAY] Failed to forward notification:", notifError instanceof Error ? notifError.message : notifError);
+    }
 }
 
 async function main() {
@@ -50,28 +149,22 @@ async function main() {
             }
 
             const rawUserId = String(req.query.user_id || "").trim();
-            const rawAmount = String(req.query.amount || "").trim();
             const botKey = String(req.query.bot_key || "").trim();
+            const requestedBotUsername = String(req.query.bot_username || botKey || "").trim();
             const format = String(req.query.format || "json").trim().toLowerCase();
 
             const telegramId = Number(rawUserId);
             if (!Number.isFinite(telegramId) || telegramId <= 0) return res.status(400).send("invalid user_id");
+            const botUsername = normalizeBotUsername(requestedBotUsername);
 
             // Qat'iy narx ishlatamiz
             const amount = getFixedPaymentAmount(); // 1111 so'm
 
-            const userRepo = AppDataSource.getRepository(User);
-            let user = await userRepo.findOne({ where: { telegramId } });
-
-            if (!user) {
-                user = userRepo.create({
-                    telegramId,
-                    username: String(req.query.username || "") || undefined,
-                    firstName: String(req.query.first_name || "") || undefined,
-                    lastName: String(req.query.last_name || "") || undefined
-                });
-                await userRepo.save(user);
-            }
+            const user = await userService.findOrCreate(telegramId, botUsername, {
+                username: String(req.query.username || "") || undefined,
+                firstName: String(req.query.first_name || "") || undefined,
+                lastName: String(req.query.last_name || "") || undefined
+            });
 
             const transactionParam = generateTransactionParam();
 
@@ -79,20 +172,20 @@ async function main() {
             const payment = paymentRepo.create({
                 transactionParam,
                 userId: user.id,
+                botUsername,
                 amount,
                 status: PaymentStatus.PENDING,
                 metadata: {
                     telegramId,
                     botKey,
+                    botUsername,
                     source: "gateway"
                 }
             });
             await paymentRepo.save(payment);
 
             // Return URL - to'lovdan keyin botga qaytish
-            const returnUrl = botKey
-                ? `https://t.me/${botKey.replace('_bot', '')}_bot`
-                : `https://t.me/biznes_goyalar_bot`;
+            const returnUrl = `https://t.me/${botUsername}`;
 
             const paymentLink = generatePaymentLink({
                 amount,
@@ -122,77 +215,18 @@ async function main() {
     app.post("/webhook/pay", async (req, res) => {
         try {
             const { tx, status, user_id } = req.body;
+            const numericUserId = Number(user_id || 0) || undefined;
 
             console.log("📥 [GATEWAY] Payment webhook:", { tx, status, user_id });
 
             // To'lov muvaffaqiyatli bo'lsa, sherlar DB'ga ham yozamiz
             if (status === "success" || status === "paid" || status === "completed") {
-                if (user_id) {
-                    try {
-                        // Sherlar DB'ga yozish
-                        const query = `
-                            INSERT INTO payments (user_id, amount, status, created_at, updated_at, click_merchant_trans_id)
-                            VALUES ($1, $2, $3, NOW(), NOW(), $4)
-                            ON CONFLICT (click_merchant_trans_id) 
-                            DO UPDATE SET 
-                                status = EXCLUDED.status,
-                                updated_at = NOW()
-                            RETURNING id, user_id, amount, status
-                        `;
-
-                        const result = await SherlarDataSource.query(query, [
-                            user_id,
-                            1111, // Fixed amount
-                            'PAID',
-                            tx
-                        ]);
-
-                        console.log("✅ [GATEWAY] Payment saved to sherlar DB:", result[0]);
-                    } catch (dbError) {
-                        console.error("❌ [GATEWAY] Failed to save to sherlar DB:", dbError);
-                    }
+                if (numericUserId) {
+                    await persistSherlarPayment(tx, numericUserId);
                 }
             }
 
-            // Bot obyekti webhook handler'ga yuboramiz
-            // Forward notification to main bot (localhost:9988)
-            const paymentRepo = AppDataSource.getRepository(Payment);
-            const payment = await paymentRepo.findOne({
-                where: { transactionParam: tx },
-                relations: ["user"]
-            });
-
-            if (payment) {
-                if (status === "success" || status === "paid" || status === "completed") {
-                    // Update payment status
-                    payment.status = PaymentStatus.PAID;
-                    await paymentRepo.save(payment);
-
-                    const telegramId = payment.metadata?.telegramId || user_id;
-                    if (telegramId) {
-                        // Update user: hasPaid=true, clear revokedAt
-                        const userRepo = AppDataSource.getRepository(User);
-                        await userRepo
-                            .createQueryBuilder()
-                            .update(User)
-                            .set({ hasPaid: true, revokedAt: () => "NULL" })
-                            .where("telegramId = :telegramId", { telegramId })
-                            .execute();
-                        console.log(`✅ [GATEWAY] User ${telegramId} marked as paid, revokedAt cleared`);
-
-                        // Forward notification request to main bot
-                        try {
-                            await axios.post('http://localhost:9988/internal/send-payment-notification', {
-                                telegramId,
-                                amount: payment.amount
-                            }, { timeout: 5000 });
-                            console.log(`📤 [GATEWAY] Notification request forwarded to main bot for user ${telegramId}`);
-                        } catch (notifError) {
-                            console.error("❌ [GATEWAY] Failed to forward notification:", notifError instanceof Error ? notifError.message : notifError);
-                        }
-                    }
-                }
-            }
+            await finalizeScopedPayment(tx, status, numericUserId, userService);
 
             return res.json({ success: true, message: "Payment processed" });
         } catch (error) {
@@ -204,74 +238,18 @@ async function main() {
     app.post("/api/pay", async (req, res) => {
         try {
             const { tx, status, user_id } = req.body;
+            const numericUserId = Number(user_id || 0) || undefined;
 
             console.log("📥 [GATEWAY] API payment:", { tx, status, user_id });
 
             // To'lov muvaffaqiyatli bo'lsa, sherlar DB'ga ham yozamiz
             if (status === "success" || status === "paid" || status === "completed") {
-                if (user_id) {
-                    try {
-                        // Sherlar DB'ga yozish
-                        const query = `
-                            INSERT INTO payments (user_id, amount, status, created_at, updated_at, click_merchant_trans_id)
-                            VALUES ($1, $2, $3, NOW(), NOW(), $4)
-                            ON CONFLICT (click_merchant_trans_id) 
-                            DO UPDATE SET 
-                                status = EXCLUDED.status,
-                                updated_at = NOW()
-                            RETURNING id, user_id, amount, status
-                        `;
-
-                        const result = await SherlarDataSource.query(query, [
-                            user_id,
-                            1111, // Fixed amount
-                            'PAID',
-                            tx
-                        ]);
-
-                        console.log("✅ [GATEWAY] Payment saved to sherlar DB:", result[0]);
-                    } catch (dbError) {
-                        console.error("❌ [GATEWAY] Failed to save to sherlar DB:", dbError);
-                    }
+                if (numericUserId) {
+                    await persistSherlarPayment(tx, numericUserId);
                 }
             }
 
-            // Same notification logic as /webhook/pay
-            const paymentRepo = AppDataSource.getRepository(Payment);
-            const payment = await paymentRepo.findOne({
-                where: { transactionParam: tx },
-                relations: ["user"]
-            });
-
-            if (payment) {
-                if (status === "success" || status === "paid" || status === "completed") {
-                    payment.status = PaymentStatus.PAID;
-                    await paymentRepo.save(payment);
-
-                    const telegramId = payment.metadata?.telegramId || user_id;
-                    if (telegramId) {
-                        // Update user: hasPaid=true, clear revokedAt
-                        const userRepo = AppDataSource.getRepository(User);
-                        await userRepo
-                            .createQueryBuilder()
-                            .update(User)
-                            .set({ hasPaid: true, revokedAt: () => "NULL" })
-                            .where("telegramId = :telegramId", { telegramId })
-                            .execute();
-                        console.log(`✅ [GATEWAY] User ${telegramId} marked as paid, revokedAt cleared`);
-
-                        try {
-                            await axios.post('http://localhost:9988/internal/send-payment-notification', {
-                                telegramId,
-                                amount: payment.amount
-                            }, { timeout: 5000 });
-                            console.log(`📤 [GATEWAY] Notification request forwarded to main bot for user ${telegramId}`);
-                        } catch (notifError) {
-                            console.error("❌ [GATEWAY] Failed to forward notification:", notifError instanceof Error ? notifError.message : notifError);
-                        }
-                    }
-                }
-            }
+            await finalizeScopedPayment(tx, status, numericUserId, userService);
 
             return res.json({ success: true, message: "Payment processed" });
         } catch (error) {

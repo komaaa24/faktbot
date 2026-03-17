@@ -29,6 +29,7 @@ import {
 } from "./handlers/admin.handlers.js";
 import { UserService } from "./services/user.service.js";
 import { getMessages, normalizeLanguage } from "./services/i18n.service.js";
+import { normalizeBotUsername } from "./utils/bot-context.js";
 
 // Environment variables validation
 const requiredEnvVars = [
@@ -130,7 +131,7 @@ bot.command("sync", async (ctx) => {
         return ctx.reply("⛔️ Bu buyruqdan foydalanish uchun ruxsatingiz yo'q.");
     }
 
-    const language = await userService.getPreferredLanguage(userId);
+    const language = await userService.getPreferredLanguage(userId, normalizeBotUsername(ctx.me?.username));
     const messages = getMessages(language);
 
     await ctx.reply(messages.syncStarted);
@@ -176,7 +177,10 @@ bot.on("callback_query:data", async (ctx) => {
             const paymentId = parseInt(data.replace("check_payment:", ""));
             await handleCheckPayment(ctx, paymentId);
         } else if (data === "cancel_payment") {
-            const language = await userService.getPreferredLanguage(ctx.from?.id || 0);
+            const language = await userService.getPreferredLanguage(
+                ctx.from?.id || 0,
+                normalizeBotUsername(ctx.me?.username)
+            );
             const messages = getMessages(language);
             await ctx.editMessageText(
                 messages.paymentCancelled
@@ -218,10 +222,15 @@ app.get("/health", (req, res) => {
 // Internal endpoint for payment notifications (from gateway)
 app.post("/internal/send-payment-notification", async (req, res) => {
     try {
-        const { telegramId, amount } = req.body;
+        const { telegramId, amount, botUsername } = req.body;
 
         if (!telegramId) {
             return res.status(400).json({ error: "telegramId required" });
+        }
+
+        const normalizedBotUsername = normalizeBotUsername(botUsername || bot.botInfo?.username);
+        if (bot.botInfo?.username && normalizedBotUsername !== normalizeBotUsername(bot.botInfo.username)) {
+            return res.status(404).json({ error: `Bot not found for @${normalizedBotUsername}` });
         }
 
         console.log(`📥 [INTERNAL] Payment notification request for user: ${telegramId}`);
@@ -229,9 +238,9 @@ app.post("/internal/send-payment-notification", async (req, res) => {
         // Send notification via bot with inline button to return to bot
         const { InlineKeyboard } = await import("grammy");
         const keyboard = new InlineKeyboard()
-            .url("🔙 Botga qaytish", `https://t.me/${bot.botInfo.username}`);
+            .url("🔙 Botga qaytish", `https://t.me/${normalizedBotUsername}`);
 
-        const preferredLanguage = await userService.getPreferredLanguage(Number(telegramId));
+        const preferredLanguage = await userService.getPreferredLanguage(Number(telegramId), normalizedBotUsername);
         const messages = getMessages(normalizeLanguage(preferredLanguage));
         const paymentAmount = Number(amount) || 1111;
 
@@ -256,7 +265,11 @@ app.post("/internal/send-payment-notification", async (req, res) => {
 // Oddiy to'lov webhook endpoint
 app.post("/webhook/pay", async (req, res) => {
     try {
-        await handlePaymentWebhook(req, res, bot);
+        await handlePaymentWebhook(req, res, {
+            fallbackBot: bot,
+            getBotByUsername: (botUsername) =>
+                normalizeBotUsername(bot.botInfo?.username) === normalizeBotUsername(botUsername) ? bot : undefined
+        });
     } catch (error) {
         console.error("❌ Webhook error:", error);
         res.status(500).json({
